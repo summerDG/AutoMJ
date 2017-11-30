@@ -8,8 +8,12 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Created by wuxiaoqi on 17-11-30.
  */
-class HyperGraph(V: Seq[HyperGraphVertex], E: Seq[HyperGraphEdge]) {
-
+class HyperGraph(V: Seq[HyperGraphVertex], E: Array[HyperGraphEdge]) {
+  def removeEdge(rId: Int, vIds: Seq[Int]): HyperGraph = {
+    vIds.foreach(vId => V(vId) --)
+    E(rId) = null
+    this
+  }
 }
 object HyperGraph {
   def apply(plan: LogicalPlan): HyperGraph = {
@@ -22,23 +26,39 @@ object HyperGraph {
         // 每个等价属性相当于HyperGraph中的一个点
         val vBuf: ArrayBuffer[HyperGraphVertex] = ArrayBuffer[HyperGraphVertex]()
         // 每个relation相当于HyperGraph中的边, 包含的属性是HyperGraph中的点
-        val eBuf: Array[(LogicalPlan, ArrayBuffer[HyperGraphVertex])] =
-          new Array[(LogicalPlan, ArrayBuffer[HyperGraphVertex])](relations.length)
+        val eBuf: Array[ArrayBuffer[Int]] =
+          new Array[ArrayBuffer[Int]](relations.length)
 
         for (i <- 0 to equivalenceClasses.length - 1) {
-          vBuf(i) = HyperGraphVertex(i, equivalenceClasses(i).map(_.k))
+          vBuf += HyperGraphVertex(i, equivalenceClasses(i).map(_.k))
           for (node <- equivalenceClasses(i)) {
             val rId = node.rId
             if (eBuf(rId) == null) {
-              eBuf(rId) = (relations(rId), ArrayBuffer[HyperGraphVertex]())
+              eBuf(rId) = ArrayBuffer[Int]()
             }
-            eBuf(rId)._2 += vBuf(i)
+            eBuf(rId) += i
+          }
+        }
+
+        // 另外还有一部分点是不参与Join的，otherVId对这些点进行编号
+        var otherVId = equivalenceClasses.length
+        // 每张表也会包含不参与Join的点
+        val otherVertices: Array[ArrayBuffer[Int]] =
+          new Array[ArrayBuffer[Int]](relations.length)
+
+        for (rId <- 0 to relations.length - 1) {
+          val relation = relations(rId)
+          for (attr <- relation.output if eBuf(rId).contains(attr)) {
+            vBuf += HyperGraphVertex(otherVId, Seq[Expression](attr))
+            otherVertices(rId) += otherVId
+            otherVId += 1
           }
         }
         val vertices: Seq[HyperGraphVertex] = vBuf
-        val edges: Seq[HyperGraphEdge] = eBuf.map {
-          case (p: LogicalPlan, v: ArrayBuffer[HyperGraphVertex]) => HyperGraphEdge(p, v)
-        }.toSeq
+        val edges: Array[HyperGraphEdge] = {
+          for (rId <- 0 to relations.length - 1)
+            yield HyperGraphEdge(relations(rId), eBuf(rId)++otherVertices(rId))
+        }.toArray
         new HyperGraph(vertices, edges)
     }
   }
