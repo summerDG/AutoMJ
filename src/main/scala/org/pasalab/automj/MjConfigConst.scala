@@ -5,4 +5,5 @@ package org.pasalab.automj
  */
 object MjConfigConst {
   val METADATA_LOCATION: String = "spark.automj.metadata.location"
+  val REDUCE_TREE_STRATEGY: String = "spark.automj.reduceStrategy"
 }

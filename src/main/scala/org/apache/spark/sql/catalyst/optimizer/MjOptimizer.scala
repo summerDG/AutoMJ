@@ -1,14 +1,15 @@
 package org.apache.spark.sql.catalyst.optimizer
 
-import org.apache.spark.sql.catalyst.expressions.{And, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
+import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.plans.Inner
+import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, ShareJoin}
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.pasalab.automj._
 
 /**
  * Created by wuxiaoqi on 17-11-29.
  */
-case class MjOptimizer(meta: MetaManager) extends Rule[LogicalPlan]{
+case class MjOptimizer(strategy: ReduceTreeStrategy) extends Rule[LogicalPlan]{
   override def apply(plan: LogicalPlan): LogicalPlan = {
     plan match {
       case MjExtractor(keysEachRelation,
@@ -25,17 +26,33 @@ case class MjOptimizer(meta: MetaManager) extends Rule[LogicalPlan]{
           case ((l, r), _) =>
             circle.contains(l) || circle.contains(r)
         }
-        // ShareJoin节点和GHD节点合并的时候的Join条件
-        val combinedCondition: Expression = combinedConditionMap
-          .flatMap(x => x._2._1 ++ x._2._2)
-          .reduce((l, r) => And(l , r))
 
         val multiRoundIds = (0 to relations.length - 1).filter(i => !circle.contains(i))
-        val hypergraph = HyperGraph(multiRoundCondition.toMap, relations, multiRoundIds)
+        // 将剩余的relations按照Join条件组织成一张图, 凡是有Join关系的表就会相连, 进行等价类划分
+        // 然后把与ShareJoin相连的condition也按照等价类划分出来
+        // 每个branch表示(join分支, 和shareJoin连接的条件)
+        val branches = Graph(multiRoundCondition.map(_._1).toSeq).connectComponent().map {
+          case nodes =>
+            val set = nodes.map(_.v).toSet
+            val branchMap = multiRoundCondition.filter {
+              case ((l,r),x) =>
+                set.contains(l) && set.contains(r)
+            }.toMap
+            val combinedCondition: Expression = combinedConditionMap.flatMap {
+              case ((l, r), (lk,rk)) =>
+                if (multiRoundIds.contains(l) || multiRoundIds.contains(r))
+                  Some(lk.zip(rk).map(x => EqualTo(x._1, x._2)).reduce((l,r) => And(l, r)))
+                else None
+            }.reduce((l,r) => And(l, r))
+            (strategy.reduce(branchMap, relations), combinedCondition)
+        }
+
+//        val hypergraph = HyperGraph(multiRoundCondition.toMap, relations, multiRoundIds)
 
         // 生成一轮Join的LogicalPlan ShareJoin
         val keys = originBothKeysEachCondition.flatMap(x => x._2._1 ++ x._2._1).toSet
-        val (oneRoundKeys, oneRoundRelations) = circle.map(rId => (keysEachRelation(rId).filter(keys), relations(rId))).unzip
+        val (oneRoundKeys, oneRoundRelations) = circle
+          .map(rId => (keysEachRelation(rId).filter(keys), relations(rId))).unzip
         val idMap = circle.zipWithIndex.toMap
         val oneRoundCondition = tmpOneRoundCondition.map {
           case ((l, r), v) =>
@@ -46,7 +63,21 @@ case class MjOptimizer(meta: MetaManager) extends Rule[LogicalPlan]{
             (AttributeVertex(idMap(l), lk), AttributeVertex(idMap(r), rk))
         }.toSeq
 
-        ShareJoin(oneRoundKeys, oneRoundCondition, None, oneRoundRelations, 1024, Graph(initEdges).connectComponent())
+        val oneRound: LogicalPlan = ShareJoin(oneRoundKeys, oneRoundCondition, None,
+          oneRoundRelations, 1024, Graph(initEdges).connectComponent())
+
+        // 合并一轮Join节点和多轮Join的节点
+        val j: LogicalPlan = branches.foldLeft(oneRound) {
+          case (pre, branch) =>
+            Join(pre, branch._1, Inner, Some(branch._2))
+        }
+
+        // 如果多轮Join之后还有条件谓词，就加个过滤器
+        if (otherConditions.isEmpty) j
+        else {
+          val filterCondition = otherConditions.reduce((l, r) => And(l, r))
+          Filter(filterCondition, j)
+        }
     }
   }
   def findCircle(edges: Seq[(Int, Int)], len: Int): Seq[Int] = {

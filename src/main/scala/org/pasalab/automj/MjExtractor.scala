@@ -144,7 +144,6 @@ object MjExtractor extends Logging with PredicateHelper {
       val predicates = condition.map(splitConjunctivePredicates).getOrElse(Nil)
       var pid = 0
       var hasChanged = false
-//      val addableKeys: MutablePair[Expression, Expression] = new MutablePair()
       while (pid < predicates.length) {
         var addableLeftKey: Expression = null
         var addableRightKey: Expression = null
