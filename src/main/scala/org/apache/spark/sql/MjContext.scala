@@ -5,7 +5,7 @@ import org.apache.spark.internal.Logging
 import org.apache.spark.sql.catalyst.optimizer.MjOptimizer
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
-import org.pasalab.automj.{Catalog, MetaManager, MjConfigConst, ReduceTreeStrategy}
+import org.pasalab.automj._
 
 /**
  * Created by wuxiaoqi on 17-11-27.
@@ -18,9 +18,14 @@ class MjContext(val session: SparkSession) extends Serializable with Logging {
     sqlContext)
 
   // Rule需要传入meta, 从而可以获取各种表的元信息
-  val reduceStrategy: ReduceTreeStrategy = Class.forName(conf.get(MjConfigConst.REDUCE_TREE_STRATEGY))
-    .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[ReduceTreeStrategy]
+  val multiRoundStrategy: MultiRoundStrategy = Class.forName(conf.get(MjConfigConst.MULTI_ROUND_STRATEGY))
+    .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[MultiRoundStrategy]
+  val oneRoundStrategy: OneRoundStrategy = Class.forName(conf.get(MjConfigConst.ONE_ROUND_STRATEGY))
+    .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[OneRoundStrategy]
+  val joinSizeEstimator: JoinSizeEstimator = Class.forName(conf.get(MjConfigConst.JOIN_SIZE_ESTIMATOR))
+    .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[JoinSizeEstimator]
 
-  session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](MjOptimizer(reduceStrategy))
+  session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](
+    MjOptimizer(oneRoundStrategy, multiRoundStrategy, joinSizeEstimator))
   session.experimental.extraStrategies ++= Seq[Strategy]()
 }

@@ -5,5 +5,7 @@ package org.pasalab.automj
  */
 object MjConfigConst {
   val METADATA_LOCATION: String = "spark.automj.metadata.location"
-  val REDUCE_TREE_STRATEGY: String = "spark.automj.reduceStrategy"
+  val MULTI_ROUND_STRATEGY: String = "spark.automj.multiRoundStrategy"
+  val ONE_ROUND_STRATEGY: String = "spark.automj.oneRoundStrategy"
+  val JOIN_SIZE_ESTIMATOR: String = "spark.auto.joinSizeEstimator"
 }
