@@ -1,6 +1,6 @@
 package org.pasalab.automj
 
-import org.apache.spark.sql.{DataFrame, SQLContext}
+import org.apache.spark.sql.{DataFrame, SQLContext, Statistics}
 
 import scala.collection.mutable
 /**

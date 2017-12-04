@@ -1,12 +1,13 @@
-package org.pasalab.automj
+package org.apache.spark.sql
 
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus
 import org.apache.spark.Partition
-import org.apache.spark.sql.{DataFrame, Row, SQLContext}
+import org.apache.spark.rdd.PartitionwiseSampledRDDPartition
 import org.apache.spark.util.random.{BernoulliSampler, RandomSampler}
+import org.pasalab.automj.PartitionInfo
 
-import scala.util.Random
 import scala.collection.mutable
+import scala.util.Random
 
 /**
  * Created by wuxiaoqi on 17-11-28.
