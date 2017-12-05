@@ -22,7 +22,7 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
                             conditions: Option[Expression],
                             relations: Seq[SparkPlan],
                             numShufflePartitions: Int,
-                            equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]) extends SparkPlan {
+                            closures: Seq[Seq[(ExpressionAndAttributes, Int)]]) extends SparkPlan {
 
   override lazy val metrics = Map(
     "numOutputRows" -> SQLMetrics.createMetric(sparkContext, "number of output rows"))
@@ -45,22 +45,13 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
     .foldRight(List[Distribution]())((keys, s) => ClusteredDistribution(keys) :: s)
 
   def outputNewPartitioning: Partitioning = PartitioningCollection(relations.map(_.outputPartitioning))
-  private var closures: Seq[Seq[(ExpressionAndAttributes, Int)]] = null
-  private def getClosures(): Seq[Seq[(ExpressionAndAttributes, Int)]] = {
-    assert(closures != null, "closure is not initialized.")
-    closures
-  }
-
-  def setClosures(c: Seq[Seq[(ExpressionAndAttributes, Int)]]): Unit = {
-    closures = c
-  }
 
   /**
    * The Projection is used to parse value from InternalRow, the following id
    * represents the corresponding table ID. The outer Seq is sorted on the closure ID.
    */
   private def createKeyGenerator(): Seq[Seq[(Projection, Int)]] = {
-    getClosures.map(s => s.map {
+    closures.map(s => s.map {
       case (exprsAndAttrs, id) =>
         (UnsafeProjection.create(exprsAndAttrs.expressions, exprsAndAttrs.output), id)
     })
@@ -69,17 +60,13 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
     row => createKeyGenerator().flatMap(s => s).find(_._2 == 0).get._1(row).getInt(0)
   }
   private def compare(): ((InternalRow, InternalRow) => Int) = {
-    val keyOrdering = newNaturalAscendingOrdering(getClosures()
+    val keyOrdering = newNaturalAscendingOrdering(closures
       .flatMap(s => s).find(_._2 == 0).get._1.expressions.map(_.dataType))
     (row1, row2) => keyOrdering.compare(row1, row2)
   }
   // TODO: Have to modify doExecute only for inner join
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
-    closures = coordinator match {
-      case Some(exchangeCoordinator) => exchangeCoordinator.closures
-      case None => Seq[Seq[(ExpressionAndAttributes, Int)]]()
-    }
 
     ZippedPartitionsRDDs(sparkContext, relations.head.execute(), relations.tail.map(_.execute())) {
       iterators =>
@@ -90,7 +77,7 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
             .getOrElse((r: InternalRow) => true)
         }
 
-        val keyOrderings = getClosures().map {
+        val keyOrderings = closures.map {
           case closure: Seq[(ExpressionAndAttributes, Int)] =>
             val keys = closure.head._1.expressions
             newNaturalAscendingOrdering(keys.map(_.dataType))
@@ -195,6 +182,8 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
         }.toScala
     }
   }
+
+  override def children: Seq[SparkPlan] = children
 }
 
 object LeapFrogJoinExec {
@@ -204,10 +193,10 @@ object LeapFrogJoinExec {
              conditions: Option[Expression],
              relations: Seq[SparkPlan],
              numShufflePartitions: Int,
-             equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]): LeapFrogJoinExec = {
+             closures: Seq[Seq[(ExpressionAndAttributes, Int)]]): LeapFrogJoinExec = {
     new LeapFrogJoinExec(keysEachRelation,
       bothKeysEachCondition, conditions, relations, numShufflePartitions,
-      equivalenceClasses)
+      closures)
   }
 }
 

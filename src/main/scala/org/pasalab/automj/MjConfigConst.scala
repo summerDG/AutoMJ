@@ -7,5 +7,6 @@ object MjConfigConst {
   val METADATA_LOCATION: String = "spark.automj.metadata.location"
   val MULTI_ROUND_STRATEGY: String = "spark.automj.multiRoundStrategy"
   val ONE_ROUND_STRATEGY: String = "spark.automj.oneRoundStrategy"
-  val JOIN_SIZE_ESTIMATOR: String = "spark.auto.joinSizeEstimator"
+  val JOIN_SIZE_ESTIMATOR: String = "spark.automj.joinSizeEstimator"
+  val SHARE_JOIN_STRATEGY: String = "spark.automj.shareJoinStrategy"
 }

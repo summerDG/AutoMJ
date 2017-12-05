@@ -1,5 +1,6 @@
 package org.pasalab.automj
 
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.{DataFrame, SQLContext, Statistics}
 
 import scala.collection.mutable
@@ -20,4 +21,6 @@ class MetaManager(catalog: Catalog, sqlContext: SQLContext) {
     val statistics = new Statistics(dataFrame, sqlContext, fraction)
     registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample)
   }
+  //TODO: LogicalPlan -> String -> TableInfo
+  def getInfo(plan: LogicalPlan): Option[TableInfo] = None
 }
