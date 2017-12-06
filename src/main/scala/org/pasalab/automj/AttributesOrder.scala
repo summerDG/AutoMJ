@@ -1,5 +1,7 @@
 package org.pasalab.automj
 
+import org.apache.spark.sql.catalyst.expressions.ExprId
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.KeysAndTableId
 
 /**
@@ -7,5 +9,7 @@ import org.apache.spark.sql.execution.KeysAndTableId
  */
 trait AttributesOrder {
   def attrOptimization(closureLength: Int,
-                       children: Seq[TableInfo]): Array[Seq[KeysAndTableId]]
+                       relations: Seq[LogicalPlan],
+                       statistics: Seq[TableInfo],
+                       exprToCid: Map[ExprId, Int]): Array[Seq[KeysAndTableId]]
 }

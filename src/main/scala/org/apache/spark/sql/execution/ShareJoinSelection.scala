@@ -1,7 +1,7 @@
 package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.Strategy
-import org.apache.spark.sql.catalyst.expressions.{Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
 import org.apache.spark.sql.execution.exchange.ShareExchange
 import org.apache.spark.sql.execution.joins.{ExpressionAndAttributes, LeapFrogJoinExec}
@@ -22,8 +22,20 @@ abstract class ShareJoinSelection(meta: MetaManager, conf: SQLConf) extends Stra
       val children: Seq[SparkPlan] = relations.map(n => planLater(n))
 
       val statistics: Seq[TableInfo] = relations.flatMap(r => meta.getInfo(r))
+
+      val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
+        case (nodes, cId) =>
+          nodes.flatMap {
+            case node =>
+              node.v.k.map {
+                case e: AttributeReference =>
+                  (e.exprId, cId)
+              }
+          }
+      }.toMap
+
       val dimensionToExprs: Array[Seq[KeysAndTableId]] =
-        attrOptimization(equivalenceClasses.length, statistics)
+        attrOptimization(equivalenceClasses.length, relations, statistics, exprToCid)
 
       val buffer = new Array[ArrayBuffer[Expression]](relations.length)
         .map(x => ArrayBuffer[Expression]())

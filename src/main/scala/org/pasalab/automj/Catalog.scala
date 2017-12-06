@@ -40,7 +40,7 @@ class Catalog(location: String, sparkSession: SparkSession) {
             cardinality += field -> card
         }
       }
-      map += tableName -> TableInfo(size, count, cardinality.toMap, sample)
+      map += tableName -> TableInfo(tableName, size, count, cardinality.toMap, sample)
     }
     map
   }
@@ -52,10 +52,21 @@ class Catalog(location: String, sparkSession: SparkSession) {
     addedTables += tableName
   }
   def close: Unit ={
+    val fileSystem: FileSystem = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
     for (tableName <- addedTables; if tables.contains(tableName)) {
       val info = tables.get(tableName).get
-      val fileName = tableName + "-" + info.size + "-" + info.count + "-" + info.cardinality
-      info.sample.write.json(location + "/" + fileName)
+      //生成size文件
+      val size = fileSystem.create(new Path(location+"/size-"+info.size))
+      size.close()
+      //生成count文件
+      val count = fileSystem.create(new Path(location+"/count-"+info.count))
+      count.close()
+      //为每个field生成对应的cardinality文件
+      for ((f, c)<- info.cardinality) {
+        val field = fileSystem.create(new Path(location+"/"+f+"-"+c))
+        field.close()
+      }
+      info.sample.write.json(location + "/sample")
     }
     tables.clear()
     addedTables.clear()
