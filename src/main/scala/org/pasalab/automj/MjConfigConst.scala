@@ -8,5 +8,4 @@ object MjConfigConst {
   val MULTI_ROUND_STRATEGY: String = "spark.automj.multiRoundStrategy"
   val ONE_ROUND_STRATEGY: String = "spark.automj.oneRoundStrategy"
   val JOIN_SIZE_ESTIMATOR: String = "spark.automj.joinSizeEstimator"
-  val SHARE_JOIN_STRATEGY: String = "spark.automj.shareJoinStrategy"
 }

@@ -19,8 +19,8 @@ case class MjOptimizer(oneRoundStrategy: OneRoundStrategy,
       case MjExtractor(keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations) =>
         // 找出查询结构中的环
-        val circle: Seq[Int] = findCircle(originBothKeysEachCondition.map(_._1).toSeq, relations.length)
-        //TODO: 比较这个circle用一轮Join和多轮Join的通信量...
+        val circle: Seq[Int] = findCircle(originBothKeysEachCondition.toSeq.map(_._1), relations.length)
+
         val (tmpOneRoundCondition, tmpCondition) = originBothKeysEachCondition.partition {
           case ((l, r), _) =>
           circle.contains(l) && circle.contains(r)
@@ -53,7 +53,6 @@ case class MjOptimizer(oneRoundStrategy: OneRoundStrategy,
           (mutable.Map[(Int, Int), (Seq[Expression], Seq[Expression])](), originBothKeysEachCondition)
         }
 
-        //TODO: 把originBothKeysEachCondition分成两部分, 一部分是一轮Join, 另一部分是多轮Join
 
         // 生成一轮Join的LogicalPlan ShareJoin
         val multiRoundIds = (0 to relations.length - 1).filter(i => !circle.contains(i))
@@ -68,12 +67,21 @@ case class MjOptimizer(oneRoundStrategy: OneRoundStrategy,
               case ((l,r),x) =>
                 set.contains(l) && set.contains(r)
             }.toMap
-            val combinedCondition: Expression = combinedConditionMap.flatMap {
+
+            // 当前分支涉及到的表
+            val relationIds: Set[Int] = branchMap.toSeq.flatMap {
+              case ((l, r), v) =>
+                Seq[Int](l, r)
+            }.toSet
+            // 当前分支和环结构连接的条件, combinedConditionMap每个条件最多只可能包含当前分支的一张表
+            val combinedCondition: Expression = combinedConditionMap.filter{
+              case ((l, r), c) =>
+                relationIds.contains(l) || relationIds.contains(r)
+            }.flatMap {
               case ((l, r), (lk,rk)) =>
-                if (multiRoundIds.contains(l) || multiRoundIds.contains(r))
-                Some(lk.zip(rk).map(x => EqualTo(x._1, x._2)).reduce((l,r) => And(l, r)))
-              else None
+                lk.zip(rk).map(x => EqualTo(x._1, x._2))
             }.reduce((l,r) => And(l, r))
+
             (multiRoundStrategy.optimize(branchMap, relations), combinedCondition)
         }
 
@@ -97,6 +105,13 @@ case class MjOptimizer(oneRoundStrategy: OneRoundStrategy,
         }
     }
   }
+
+  /**
+   * 找到图中带有环的结构, 拓扑排序的算法可以保证一个连通图的带环的结构只有一个(即使有多个也会连在一起构成一个大的带环结构)
+   * @param edges 边集
+   * @param len 点的个数
+   * @return 带环结构的所有点
+   */
   def findCircle(edges: Seq[(Int, Int)], len: Int): Seq[Int] = {
     // 初始化每个顶点的度
     val degrees = new Array[Int](len)

@@ -1,17 +1,32 @@
 package org.pasalab.automj
-
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.{KeysAndTableId, ShareJoinSelection}
-import org.apache.spark.sql.internal.SQLConf
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
+import org.apache.spark.sql.execution.KeysAndTableId
 
 import scala.collection.mutable.ArrayBuffer
 
 /**
- * Created by wuxiaoqi on 17-12-5.
- * 顺序优化算法实现：就是按照cardinality大小进行排序
+ * Created by wuxiaoqi on 17-12-7.
  */
-case class ShareJoinSelectionImpl(meta: MetaManager, conf: SQLConf) extends ShareJoinSelection(meta, conf){
+case class ShareStrategy(meta: MetaManager)  extends OneRoundStrategy(meta) {
+  override protected def optimizeCore: LogicalPlan = {
+    ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
+      numShufflePartitions, shares, dimensionToExprs, closures)
+  }
+
+  override protected def costCore: Long = {
+    val rIdToShare = closures.map(s => s.map(_._2)).zipWithIndex.flatMap {
+      case (rIds, sId) => rIds.map(r => (r, sId))
+    }.groupBy(_._1).map {
+      case (rId, sIds) => (rId, numShufflePartitions / sIds.map(x => shares(x._2)).fold(1)(_ * _))
+    }
+    val statistics = relations.map(x => meta.getInfo(x))
+
+    rIdToShare.map {
+      case (rId, replicate) => statistics(rId).size * replicate
+    }.sum
+  }
+
   override def attrOptimization(closureLength: Int,
                                 relations: Seq[LogicalPlan],
                                 statistics: Seq[TableInfo],
