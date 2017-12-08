@@ -24,7 +24,7 @@ class MjContext(val session: SparkSession) extends Serializable with Logging {
   val oneRoundStrategy: OneRoundStrategy = Class.forName(conf.get(MjConfigConst.ONE_ROUND_STRATEGY))
     .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[OneRoundStrategy]
   val joinSizeEstimator: JoinSizeEstimator = Class.forName(conf.get(MjConfigConst.JOIN_SIZE_ESTIMATOR))
-    .getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[JoinSizeEstimator]
+    .getConstructor(classOf[MetaManager], classOf[SparkConf]).newInstance(meta, conf).asInstanceOf[JoinSizeEstimator]
 
   val shareJoinStrategy: Strategy = ShareJoinSelection(meta, sqlContext.conf)
 
