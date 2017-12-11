@@ -15,7 +15,7 @@ class MjContext(val session: SparkSession) extends Serializable with Logging {
   val conf: SparkConf = session.sparkContext.getConf
   val sqlContext: SQLContext = session.sqlContext
   val meta: MetaManager = new MetaManager(
-    new Catalog(conf.get(MjConfigConst.METADATA_LOCATION), session),
+    new Catalog(conf.getOption(MjConfigConst.METADATA_LOCATION), session),
     sqlContext)
 
   // Rule需要传入meta, 从而可以获取各种表的元信息

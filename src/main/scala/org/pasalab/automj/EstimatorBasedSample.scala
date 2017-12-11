@@ -12,6 +12,8 @@ case class EstimatorBasedSample(meta: MetaManager, conf: SparkConf) extends Join
   override protected def costCore: Long = {
     val samples:Seq[DataFrame] = getSamples()
 
+    val probability: Seq[Double] = getProbability()
+
     val marked: mutable.Set[Int] = mutable.Set[Int]()
 
     val markedCondition: mutable.Set[(Int, Int)] = mutable.Set[(Int, Int)]()
@@ -33,18 +35,17 @@ case class EstimatorBasedSample(meta: MetaManager, conf: SparkConf) extends Join
     }
 
     var communication: Long = 0
-    var tables = 1
     while (!currentVertices.isEmpty) {
       val newVertices: mutable.ArrayBuffer[Int] = mutable.ArrayBuffer[Int]()
 
       for (v <- currentVertices) {
         marked.add(v)
-        tables += 1
         val neighbourhood = edges(v).filter(x => !marked.contains(x))
 
         for (n <- neighbourhood) {
           val others = edges(n)
             .filter(x => marked.contains(x) && !(markedCondition.contains((x, n)) || markedCondition.contains(n, x)))
+          p *= probability(n)
           for (o <- others) {
             assert(joinConditions.contains((o, n))|| joinConditions.contains((n, o)), "construct graph problem")
             if (joinConditions.contains((o, n))) {
@@ -56,7 +57,7 @@ case class EstimatorBasedSample(meta: MetaManager, conf: SparkConf) extends Join
             }
           }
           //TODO: persist后性能会好
-          communication += join.count() / math.pow(p, tables)
+          communication += join.count() / p
         }
         newVertices ++= neighbourhood
       }

@@ -12,12 +12,12 @@ class MetaManager(catalog: Catalog, sqlContext: SQLContext) {
                     size: Long,
                     count: Long,
                     cardinality: Map[String, Long],
-                    sample: DataFrame): Unit ={
-    catalog.registerTable(tableName, TableInfo(tableName, size, count, cardinality, sample))
+                    sample: DataFrame, p: Double): Unit ={
+    catalog.registerTable(tableName, TableInfo(tableName, size, count, cardinality, sample, p))
   }
-  def registerTable(tableName: String, dataFrame: DataFrame, fraction: Double): Unit ={
+  def registerTable(tableName: String, dataFrame: DataFrame, p: Double, fraction: Double): Unit ={
     val statistics = new Statistics(dataFrame, sqlContext, fraction)
-    registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample)
+    registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample, p)
   }
   //TODO: LogicalPlan -> String -> TableInfo
   //用alias作为表名

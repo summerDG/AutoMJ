@@ -34,6 +34,11 @@ abstract class JoinSizeEstimator(meta: MetaManager, conf: SparkConf) {
     joinConditions != null && relations != null
   }
 
+  def getProbability(): Seq[Double] = {
+    val p = relations.flatMap(l => meta.getInfo(l)).map(_.p)
+    assert(relations.length == p.length, "some relations have no sample probability")
+    p
+  }
   def getSamples(): Seq[DataFrame] = {
     val s = relations.flatMap (l => meta.getInfo(l)).map(_.sample)
     assert(relations.length == s.length, "some relations have no sample")
