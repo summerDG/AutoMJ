@@ -980,4 +980,21 @@ class MultiJoinRow(num: Int) extends InternalRow {
   override def update(i: Int, value: Any): Unit = ???
 }
 
-case class ExpressionAndAttributes(expressions: Seq[Expression], output: Seq[Attribute])
+case class ExpressionAndAttributes(expressions: Seq[Expression], output: Seq[Attribute]) {
+  def ==(o: ExpressionAndAttributes) : Boolean = {
+    if (expressions.length == o.expressions.length && output.length == o.output.length) {
+      expressions.zip(o.expressions).forall{
+        case (l, r) =>
+          l.semanticEquals(r)
+      } &&
+      output.zip(o.output).forall {
+        case (l, r) =>
+          l.semanticEquals(r)
+      }
+    } else false
+  }
+
+  override def toString: String = {
+    s"expressions: ${expressions.foldLeft("")(_ + _.toString())}; output: ${output.foldLeft("")(_ + _.toString())}"
+  }
+}

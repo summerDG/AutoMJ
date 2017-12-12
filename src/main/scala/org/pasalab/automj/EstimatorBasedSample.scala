@@ -64,7 +64,6 @@ case class EstimatorBasedSample(meta: MetaManager, conf: SparkConf) extends Join
 
       currentVertices = newVertices.toArray
     }
-
-    conf.getInt(MjConfigConst.JOIN_DEFAULT_SIZE, 0)
+    communication
   }
 }

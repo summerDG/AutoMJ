@@ -3,7 +3,7 @@ import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
 import org.apache.spark.sql.execution.KeysAndTableId
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable
 
 /**
  * Created by wuxiaoqi on 17-12-7.
@@ -41,18 +41,20 @@ case class ShareStrategy(meta: MetaManager)  extends OneRoundStrategy(meta) {
             (e, cId, card, id)
         }
     }.sortBy(_._3)
-    val newOrderedAttr = new Array[ArrayBuffer[KeysAndTableId]](closureLength)
-      .map(_ => ArrayBuffer[KeysAndTableId]())
+    val newOrderedAttr = new Array[mutable.ArrayBuffer[KeysAndTableId]](closureLength)
+      .map(_ => mutable.ArrayBuffer[KeysAndTableId]())
+    val ascend: mutable.Map[Int, Int] = mutable.Map[Int, Int]()
+    var currentId = 0
     for ((exprs, cId, _, id) <- orderedNodes) {
-      newOrderedAttr(cId) += KeysAndTableId(exprs :: Nil, id)
+      if (ascend.contains(cId)) {
+        newOrderedAttr(ascend(cId)) += KeysAndTableId(exprs :: Nil, id)
+      } else {
+        ascend += cId -> currentId
+        currentId += 1
+        newOrderedAttr(currentId) += KeysAndTableId(exprs :: Nil, id)
+      }
     }
-    logInfo(s"[POS]before new order attributes, orderedNodes length: ${orderedNodes.length}," +
-      s"newOrderedAttr ${newOrderedAttr.map(_.length.toString).reduceLeft(_ + "," + _)}")
-    //    for (cId <- 0 until closureLength) {
-    //      logInfo(s"closure Id: $cId, ${newOrderedAttr(cId).fold("")(_.toString + _)}")
-    //    }
-    val x = newOrderedAttr.map(_.toSeq)
-    logInfo("[POS]after new order attributes")
-    x
+
+    newOrderedAttr.map(_.sortBy(_.tableId).toSeq)
   }
 }

@@ -1,5 +1,6 @@
 package org.pasalab.automj
 
+import org.apache.spark.sql.{DataFrame, SQLContext, SQLImplicits, SparkSession}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.types.IntegerType
@@ -7,7 +8,14 @@ import org.apache.spark.sql.types.IntegerType
 /**
  * Created by wuxiaoqi on 17-12-11.
  */
-trait ArgumentsSet {
+trait ArgumentsSet {self =>
+  protected def spark: SparkSession
+  private object internalImplicits extends SQLImplicits {
+    protected override def _sqlContext: SQLContext = self.spark.sqlContext
+  }
+  import internalImplicits._
+  import ArgumentsSet._
+
   val triangleData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
       "a.x"->AttributeReference("x", IntegerType)(exprId = ExprId(1)),
@@ -30,8 +38,41 @@ trait ArgumentsSet {
       Seq[Expression](attributes("b.x"), attributes("b.y")),
       Seq[Expression](attributes("c.y"), attributes("c.z"))
     )
-    Arguments(keys, joinConditions, relations)
+    val aDF = spark.sparkContext.parallelize(
+        XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    aDF.createOrReplaceTempView("a")
+
+    val bDF = spark.sparkContext.parallelize(
+        XyData(1, 1) ::
+        XyData(1, 2) ::
+        XyData(2, 1) ::
+        XyData(2, 2) ::
+        XyData(3, 1) ::
+        XyData(3, 2) :: Nil, 2).toDF()
+    bDF.createOrReplaceTempView("b")
+
+    val cDF = spark.sparkContext.parallelize(
+        YzData(1, 1) ::
+        YzData(1, 2) ::
+        YzData(2, 1) ::
+        YzData(2, 2) ::
+        YzData(3, 1) ::
+        YzData(3, 2) :: Nil, 2).toDF()
+    cDF.createOrReplaceTempView("c")
+
+    val info: Seq[TableInfo] = Seq[TableInfo](
+      TableInfo("a", 10, 10, Map[String, Long]("x"->5, "z"->9), aDF, 1),
+      TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
+      TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1)
+    )
+    Arguments(attributes, keys, joinConditions, relations, info)
   }
+
   val cliqueData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
       "a.x"->AttributeReference("x", IntegerType)(exprId = ExprId(1)),
@@ -73,8 +114,73 @@ trait ArgumentsSet {
       Seq[Expression](attributes("e.s"), attributes("e.x")),
       Seq[Expression](attributes("f.s"), attributes("f.y"))
     )
-    Arguments(keys, joinConditions, relations)
+
+    val aDF = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    aDF.createOrReplaceTempView("a")
+
+    val bDF = spark.sparkContext.parallelize(
+      XyData(1, 1) ::
+        XyData(1, 2) ::
+        XyData(2, 1) ::
+        XyData(2, 2) ::
+        XyData(3, 1) ::
+        XyData(3, 2) :: Nil, 2).toDF()
+    bDF.createOrReplaceTempView("b")
+
+    val cDF = spark.sparkContext.parallelize(
+      YzData(1, 1) ::
+        YzData(1, 2) ::
+        YzData(2, 1) ::
+        YzData(2, 2) ::
+        YzData(3, 1) ::
+        YzData(3, 2) :: Nil, 2).toDF()
+    cDF.createOrReplaceTempView("c")
+
+    val dDF = spark.sparkContext.parallelize(
+      SzData(1, 1) ::
+        SzData(1, 2) ::
+        SzData(2, 1) ::
+        SzData(2, 2) ::
+        SzData(3, 1) ::
+        SzData(3, 2) :: Nil, 2).toDF()
+    dDF.createOrReplaceTempView("d")
+
+    val eDF = spark.sparkContext.parallelize(
+      SxData(1, 1) ::
+        SxData(1, 2) ::
+        SxData(2, 1) ::
+        SxData(2, 2) ::
+        SxData(3, 1) ::
+        SxData(3, 2) :: Nil, 2).toDF()
+    eDF.createOrReplaceTempView("e")
+
+    val fDF = spark.sparkContext.parallelize(
+      SyData(1, 1) ::
+        SyData(1, 2) ::
+        SyData(2, 1) ::
+        SyData(2, 2) ::
+        SyData(3, 1) ::
+        SyData(3, 2) :: Nil, 2).toDF()
+    fDF.createOrReplaceTempView("f")
+
+    val info: Seq[TableInfo] = Seq[TableInfo](
+      TableInfo("a", 10, 10, Map[String, Long]("x"->5, "z"->9), aDF, 1),
+      TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
+      TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
+      TableInfo("d", 10, 10, Map[String, Long]("s"->11, "z"->9), dDF, 1),
+      TableInfo("e", 10, 10, Map[String, Long]("s"->12, "x"->7), eDF, 1),
+      TableInfo("f", 10, 10, Map[String, Long]("s"->13, "y"->10), fDF, 1)
+    )
+
+    Arguments(attributes, keys, joinConditions, relations, info)
   }
+
   val lineData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
       "a.x"->AttributeReference("x", IntegerType)(exprId = ExprId(1)),
@@ -99,7 +205,51 @@ trait ArgumentsSet {
       Seq[Expression](attributes("c.y"), attributes("c.z")),
       Seq[Expression](attributes("d.z"))
     )
-    Arguments(keys, joinConditions, relations)
+
+    val aDF = spark.sparkContext.parallelize(
+      XData(1) ::
+        XData(2) ::
+        XData(3) ::
+        XData(4) ::
+        XData(5) ::
+        XData(6) :: Nil, 2).toDF()
+    aDF.createOrReplaceTempView("a")
+
+    val bDF = spark.sparkContext.parallelize(
+      XyData(1, 1) ::
+        XyData(1, 2) ::
+        XyData(2, 1) ::
+        XyData(2, 2) ::
+        XyData(3, 1) ::
+        XyData(3, 2) :: Nil, 2).toDF()
+    bDF.createOrReplaceTempView("b")
+
+    val cDF = spark.sparkContext.parallelize(
+      YzData(1, 1) ::
+        YzData(1, 2) ::
+        YzData(2, 1) ::
+        YzData(2, 2) ::
+        YzData(3, 1) ::
+        YzData(3, 2) :: Nil, 2).toDF()
+    cDF.createOrReplaceTempView("c")
+
+    val dDF = spark.sparkContext.parallelize(
+      ZData(1) ::
+        ZData(2) ::
+        ZData(3) ::
+        ZData(4) ::
+        ZData(5) ::
+        ZData(6) :: Nil, 2).toDF()
+    dDF.createOrReplaceTempView("d")
+
+    val info: Seq[TableInfo] = Seq[TableInfo](
+      TableInfo("a", 10, 10, Map[String, Long]("x"->5), aDF, 1),
+      TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
+      TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
+      TableInfo("d", 10, 10, Map[String, Long]("z"->9), dDF, 1)
+    )
+
+    Arguments(attributes, keys, joinConditions, relations, info)
   }
   val arbitraryData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
@@ -157,6 +307,126 @@ trait ArgumentsSet {
       Seq[Expression](attributes("i.r"), attributes("i.w")),
       Seq[Expression](attributes("j.w"))
     )
-    Arguments(keys, joinConditions, relations)
+
+    val aDF = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    aDF.createOrReplaceTempView("a")
+
+    val bDF = spark.sparkContext.parallelize(
+      XyData(1, 1) ::
+        XyData(1, 2) ::
+        XyData(2, 1) ::
+        XyData(2, 2) ::
+        XyData(3, 1) ::
+        XyData(3, 2) :: Nil, 2).toDF()
+    bDF.createOrReplaceTempView("b")
+
+    val cDF = spark.sparkContext.parallelize(
+      YzData(1, 1) ::
+        YzData(1, 2) ::
+        YzData(2, 1) ::
+        YzData(2, 2) ::
+        YzData(3, 1) ::
+        YzData(3, 2) :: Nil, 2).toDF()
+    cDF.createOrReplaceTempView("c")
+
+    val dDF = spark.sparkContext.parallelize(
+      ZpData(1, 1) ::
+        ZpData(1, 2) ::
+        ZpData(2, 1) ::
+        ZpData(2, 2) ::
+        ZpData(3, 1) ::
+        ZpData(3, 2) :: Nil, 2).toDF()
+    dDF.createOrReplaceTempView("d")
+
+    val eDF = spark.sparkContext.parallelize(
+      PqData(1, 1) ::
+        PqData(1, 2) ::
+        PqData(2, 1) ::
+        PqData(2, 2) ::
+        PqData(3, 1) ::
+        PqData(3, 2) :: Nil, 2).toDF()
+    eDF.createOrReplaceTempView("e")
+
+    val fDF = spark.sparkContext.parallelize(
+      QsData(1, 1) ::
+        QsData(1, 2) ::
+        QsData(2, 1) ::
+        QsData(2, 2) ::
+        QsData(3, 1) ::
+        QsData(3, 2) :: Nil, 2).toDF()
+    fDF.createOrReplaceTempView("f")
+
+    val gDF = spark.sparkContext.parallelize(
+      SData(1) ::
+        SData(2) ::
+        SData(3) ::
+        SData(4) ::
+        SData(5) ::
+        SData(6) :: Nil, 2).toDF()
+    gDF.createOrReplaceTempView("g")
+
+    val hDF = spark.sparkContext.parallelize(
+      YrData(1, 1) ::
+        YrData(1, 2) ::
+        YrData(2, 1) ::
+        YrData(2, 2) ::
+        YrData(3, 1) ::
+        YrData(3, 2) :: Nil, 2).toDF()
+    hDF.createOrReplaceTempView("h")
+
+    val iDF = spark.sparkContext.parallelize(
+      RwData(1, 1) ::
+        RwData(1, 2) ::
+        RwData(2, 1) ::
+        RwData(2, 2) ::
+        RwData(3, 1) ::
+        RwData(3, 2) :: Nil, 2).toDF()
+    iDF.createOrReplaceTempView("i")
+
+    val jDF = spark.sparkContext.parallelize(
+      WData(1) ::
+        WData(2) ::
+        WData(3) ::
+        WData(4) ::
+        WData(5) ::
+        WData(6) :: Nil, 2).toDF()
+    jDF.createOrReplaceTempView("j")
+
+    val info: Seq[TableInfo] = Seq[TableInfo](
+      TableInfo("a", 10, 10, Map[String, Long]("x"->5, "z"->9), aDF, 1),
+      TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
+      TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
+      TableInfo("d", 10, 10, Map[String, Long]("z"->5, "p"->9), dDF, 1),
+      TableInfo("e", 10, 10, Map[String, Long]("p"->6, "q"->7), eDF, 1),
+      TableInfo("f", 10, 10, Map[String, Long]("q"->8, "s"->10), fDF, 1),
+      TableInfo("g", 10, 10, Map[String, Long]("s"->5), gDF, 1),
+      TableInfo("h", 10, 10, Map[String, Long]("y"->6, "r"->7), hDF, 1),
+      TableInfo("i", 10, 10, Map[String, Long]("r"->8, "w"->10), iDF, 1),
+      TableInfo("j", 10, 10, Map[String, Long]("w"->8), jDF, 1)
+    )
+    Arguments(attributes, keys, joinConditions, relations, info)
   }
+}
+object ArgumentsSet {
+  case class XzData(x: Int, z: Int)
+  case class XyData(x: Int, y: Int)
+  case class YzData(y: Int, z: Int)
+  case class SzData(s: Int, z: Int)
+  case class SxData(s: Int, x: Int)
+  case class SyData(s: Int, y: Int)
+  case class XData(x: Int)
+  case class ZData(z: Int)
+  case class ZpData(z: Int, p: Int)
+  case class PqData(p: Int, q: Int)
+  case class QsData(q: Int, s: Int)
+  case class SData(s: Int)
+  case class YrData(y: Int, r: Int)
+  case class RwData(r: Int, w: Int)
+  case class WData(w: Int)
 }

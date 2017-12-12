@@ -77,6 +77,9 @@ abstract class OneRoundStrategy(meta: MetaManager) extends AttributesOrder with 
     numShufflePartitions = n
   }
 
+  def getClosures(): Seq[Seq[(ExpressionAndAttributes, Int)]] = closures
+  def getShares: Seq[Int] = shares
+
   /**
    * Generate shares used in HyperCube shuffle and update number of partitions.
    * Completed on 16/10/30. By xiaoqi wu.
