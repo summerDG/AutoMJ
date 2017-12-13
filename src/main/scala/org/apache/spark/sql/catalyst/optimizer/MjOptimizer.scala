@@ -13,7 +13,8 @@ import scala.collection.mutable
  */
 case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                        multiRoundStrategy: Option[MultiRoundStrategy] = None,
-                       joinSizeEstimator: Option[JoinSizeEstimator] = None) extends Rule[LogicalPlan]{
+                       joinSizeEstimator: Option[JoinSizeEstimator] = None,
+                       forceOneRound: Boolean) extends Rule[LogicalPlan]{
   override def apply(plan: LogicalPlan): LogicalPlan = {
     if (oneRoundStrategy.isDefined && multiRoundStrategy.isDefined && joinSizeEstimator.isDefined) {
       val oneRoundCore = oneRoundStrategy.get
@@ -45,7 +46,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           oneRoundCore.refresh(oneRoundKeys, oneRoundJoins, oneRoundRelations, 1024)
           joinSizeEstimatorCore.refresh(oneRoundJoins, oneRoundRelations)
 
-          val useOneRound: Boolean = oneRoundCore.cost() < joinSizeEstimatorCore.cost()
+          val useOneRound: Boolean = forceOneRound || oneRoundCore.cost() < joinSizeEstimatorCore.cost()
 
           // 如果OneRound策略的通信量小，那么就对剩余的Join条件进行划分，分出哪些用于链接OneRound，哪些用于MultiRound内部
           val (combinedConditionMap, multiRoundCondition) = if (useOneRound) {

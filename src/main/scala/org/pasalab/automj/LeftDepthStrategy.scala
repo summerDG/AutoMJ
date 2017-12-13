@@ -19,9 +19,11 @@ case class LeftDepthStrategy(meta: MetaManager) extends MultiRoundStrategy(meta)
       case (k, v) =>
         (k, v.map(_._2))
     }
-    var currentVertices:Array[Int] = Array[Int](0)
 
-    var join: LogicalPlan = relations(0)
+    val firstId = edges.find(p => p._2.length == 1).get._1
+    var currentVertices:Array[Int] = Array[Int](firstId)
+
+    var join: LogicalPlan = relations(firstId)
 
     def generateJoin(v: Int, n: Int): Unit = {
       val (left, right) = joinConditions((v, n))

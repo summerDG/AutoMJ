@@ -18,7 +18,6 @@ case class ShareJoinSelection(meta: MetaManager, conf: SQLConf) extends Strategy
     conditions, numShufflePartitions, shares, dimensionToExprs, closures) =>
       val children: Seq[SparkPlan] = relations.map(n => planLater(n))
 
-
       val partitionings: Seq[HcPartitioning] = reorderedKeysEachTable.map {
         case exprs =>
           HcPartitioning(exprs, numShufflePartitions,

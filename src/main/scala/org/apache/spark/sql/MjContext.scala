@@ -29,8 +29,9 @@ class MjContext(val session: SparkSession) extends Serializable with Logging {
 
   val shareJoinStrategy: Strategy = ShareJoinSelection(meta, sqlContext.conf)
 
-  session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](
-    MjOptimizer(oneRoundStrategy, multiRoundStrategy, joinSizeEstimator))
+  private val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
+    multiRoundStrategy, joinSizeEstimator, conf.getBoolean(MjConfigConst.Force_ONE_ROUND, false))
+  session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](optimizer)
 
   session.experimental.extraStrategies ++= Seq[Strategy](shareJoinStrategy)
 }
