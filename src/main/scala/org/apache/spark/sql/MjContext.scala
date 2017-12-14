@@ -15,23 +15,27 @@ class MjContext(val session: SparkSession) extends Serializable with Logging {
   val conf: SparkConf = session.sparkContext.getConf
   val sqlContext: SQLContext = session.sqlContext
   val meta: MetaManager = new MetaManager(
-    new Catalog(conf.getOption(MjConfigConst.METADATA_LOCATION), session),
+    new MjCatalog(conf.getOption(MjConfigConst.METADATA_LOCATION), session),
     sqlContext)
 
-  // Rule需要传入meta, 从而可以获取各种表的元信息
-  val multiRoundStrategy: Option[MultiRoundStrategy] = conf.getOption(MjConfigConst.MULTI_ROUND_STRATEGY)
-    .map(c => Class.forName(c).getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[MultiRoundStrategy])
-  val oneRoundStrategy: Option[OneRoundStrategy] = conf.getOption(MjConfigConst.ONE_ROUND_STRATEGY)
-    .map(c =>Class.forName(c).getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[OneRoundStrategy])
-  val joinSizeEstimator: Option[JoinSizeEstimator] = conf.getOption(MjConfigConst.JOIN_SIZE_ESTIMATOR)
-    .map(c => Class.forName(c).getConstructor(classOf[MetaManager], classOf[SparkConf])
-      .newInstance(meta, conf).asInstanceOf[JoinSizeEstimator])
+  def refresh(): Unit = {
+    session.experimental.extraOptimizations = Seq[Rule[LogicalPlan]]()
+    session.experimental.extraStrategies = Seq[Strategy]()
+    // Rule需要传入meta, 从而可以获取各种表的元信息
+    val multiRoundStrategy: Option[MultiRoundStrategy] = conf.getOption(MjConfigConst.MULTI_ROUND_STRATEGY)
+      .map(c => Class.forName(c).getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[MultiRoundStrategy])
+    val oneRoundStrategy: Option[OneRoundStrategy] = conf.getOption(MjConfigConst.ONE_ROUND_STRATEGY)
+      .map(c =>Class.forName(c).getConstructor(classOf[MetaManager]).newInstance(meta).asInstanceOf[OneRoundStrategy])
+    val joinSizeEstimator: Option[JoinSizeEstimator] = conf.getOption(MjConfigConst.JOIN_SIZE_ESTIMATOR)
+      .map(c => Class.forName(c).getConstructor(classOf[MetaManager], classOf[SparkConf])
+        .newInstance(meta, conf).asInstanceOf[JoinSizeEstimator])
 
-  val shareJoinStrategy: Strategy = ShareJoinSelection(meta, sqlContext.conf)
+    val shareJoinStrategy: Strategy = ShareJoinSelection(meta, sqlContext.conf)
 
-  private val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
-    multiRoundStrategy, joinSizeEstimator, conf.getBoolean(MjConfigConst.Force_ONE_ROUND, false))
-  session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](optimizer)
+    val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
+      multiRoundStrategy, joinSizeEstimator, conf.getBoolean(MjConfigConst.Force_ONE_ROUND, false))
+    session.experimental.extraOptimizations ++= Seq[Rule[LogicalPlan]](optimizer)
 
-  session.experimental.extraStrategies ++= Seq[Strategy](shareJoinStrategy)
+    session.experimental.extraStrategies ++= Seq[Strategy](shareJoinStrategy)
+  }
 }

@@ -2,12 +2,12 @@ package org.pasalab.automj
 
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.execution.command.CreateViewCommand
-import org.apache.spark.sql.{DataFrame, SQLContext, Statistics}
+import org.apache.spark.sql.{DataFrame, MjCatalog, SQLContext, Statistics}
 
 /**
  * Created by wuxiaoqi on 17-11-28.
  */
-class MetaManager(var catalog: Catalog, sqlContext: SQLContext) {
+class MetaManager(var catalog: MjCatalog, sqlContext: SQLContext) {
   def getInfo(tableName: String):Option[TableInfo] = catalog.getTable(tableName)
   def registerTable(tableName: String,
                     size: Long,
@@ -27,7 +27,7 @@ class MetaManager(var catalog: Catalog, sqlContext: SQLContext) {
     case v: CreateViewCommand =>
       catalog.getTable(v.name.table)
   }
-  def refresh(latestCatalog: Catalog): Unit ={
+  def refresh(latestCatalog: MjCatalog): Unit ={
     catalog = latestCatalog
   }
 }

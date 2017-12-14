@@ -1,8 +1,8 @@
-package org.pasalab.automj
+package org.apache.spark.sql
 
-import org.apache.hadoop.fs.{FileStatus, FileSystem, Path}
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.{DataFrame, SQLContext, SparkSession}
+import org.apache.hadoop.fs.{FileSystem, Path}
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog
+import org.pasalab.automj.TableInfo
 
 import scala.collection.mutable
 
@@ -11,7 +11,8 @@ import scala.collection.mutable
  * 样本以json格式存在sample-probability目录下
  * Created by wuxiaoqi on 17-11-28.
  */
-class Catalog(location: Option[String], sparkSession: SparkSession) {
+class MjCatalog(location: Option[String], sparkSession: SparkSession)
+  extends SessionCatalog (sparkSession.sessionState.catalog.externalCatalog){
   private val tables: mutable.Map[String, TableInfo] = {
     if (location.isDefined) {
       val fileSystem: FileSystem = FileSystem.get(sparkSession.sparkContext.hadoopConfiguration)
