@@ -7,7 +7,7 @@ import org.apache.spark.sql.{DataFrame, SQLContext, Statistics}
 /**
  * Created by wuxiaoqi on 17-11-28.
  */
-class MetaManager(catalog: Catalog, sqlContext: SQLContext) {
+class MetaManager(var catalog: Catalog, sqlContext: SQLContext) {
   def getInfo(tableName: String):Option[TableInfo] = catalog.getTable(tableName)
   def registerTable(tableName: String,
                     size: Long,
@@ -26,5 +26,8 @@ class MetaManager(catalog: Catalog, sqlContext: SQLContext) {
       catalog.getTable(a.alias)
     case v: CreateViewCommand =>
       catalog.getTable(v.name.table)
+  }
+  def refresh(latestCatalog: Catalog): Unit ={
+    catalog = latestCatalog
   }
 }

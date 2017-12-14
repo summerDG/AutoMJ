@@ -1,9 +1,12 @@
 package org.pasalab.automj
 
-import org.apache.spark.sql.{DataFrame, SQLContext, SQLImplicits, SparkSession}
+import org.apache.commons.io.IOUtils
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.types.IntegerType
+
+import scala.collection.mutable
 
 /**
  * Created by wuxiaoqi on 17-12-11.
@@ -16,6 +19,7 @@ trait ArgumentsSet {self =>
   import internalImplicits._
   import ArgumentsSet._
 
+  //TODO: 不应该在这里createView, 应该再原始的DataFrame上生成View
   val triangleData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
       "a.x"->AttributeReference("x", IntegerType)(exprId = ExprId(1)),
@@ -412,6 +416,21 @@ trait ArgumentsSet {self =>
     )
     Arguments(attributes, keys, joinConditions, relations, info)
   }
+  def readFrom(fileName: String): Seq[Row] = {
+    val classLoader = getClass().getClassLoader
+    val rawData = IOUtils.lineIterator(classLoader.getResourceAsStream(fileName), "UTF-8")
+
+    val s: mutable.ArrayBuffer[Row] = mutable.ArrayBuffer[Row]()
+    while (rawData.hasNext) {
+      val line = rawData.nextLine()
+      s += Row(line.substring(1, line.length - 1).split(",").map (n => n.toInt):_*)
+    }
+    s
+  }
+  def expectedTriangle(): Seq[Row] = readFrom("triangle")
+  def expectedClique(): Seq[Row] = readFrom("clique")
+  def expectedLine(): Seq[Row] = readFrom("line")
+  def expectedArbitrary(): Seq[Row] = readFrom("arbitrary")
 }
 object ArgumentsSet {
   case class XzData(x: Int, z: Int)
