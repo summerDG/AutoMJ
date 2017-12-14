@@ -1,16 +1,20 @@
 package org.pasalab.automj
 
+import org.apache.spark.sql.automj.MjSessionCatalog
+import org.apache.spark.sql.test.SharedSQLContext
+
 /**
  * Created by wuxiaoqi on 17-12-12.
  */
-class SizeEstimatorSuite extends SharedMjContext with ArgumentsSet{
+class SizeEstimatorSuite extends SharedSQLContext with ArgumentsSet{
   test("test cost model") {
     val dataSource = triangleData
-    val expectedSize = 8
-    val estimator: JoinSizeEstimator = EstimatorBasedSample(meta, spark.sparkContext.getConf)
+    val expectedSize = 12
+    val estimator: JoinSizeEstimator =
+      EstimatorBasedSample(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog], spark.sparkContext.getConf)
     estimator.refresh(dataSource.joinConditions, dataSource.relations)
 
     val cost: Long = estimator.cost()
-    assert(cost == expectedSize, s"Estimated size is $cost, not 8")
+    assert(cost == expectedSize, s"Estimated size is $cost, not $expectedSize")
   }
 }

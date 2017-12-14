@@ -1,4 +1,5 @@
 package org.pasalab.automj
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
@@ -8,7 +9,7 @@ import scala.collection.mutable
 /**
  * Created by wuxiaoqi on 17-12-7.
  */
-case class LeftDepthStrategy(meta: MetaManager) extends MultiRoundStrategy(meta){
+case class LeftDepthStrategy(catalog: MjSessionCatalog) extends MultiRoundStrategy(catalog){
   override def optimize(joinConditions: Map[(Int, Int), (Seq[Expression], Seq[Expression])],
                         relations: Seq[LogicalPlan]): LogicalPlan = {
     val marked: mutable.Set[Int] = mutable.Set[Int]()

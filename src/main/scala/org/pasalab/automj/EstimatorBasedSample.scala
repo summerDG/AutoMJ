@@ -2,13 +2,14 @@ package org.pasalab.automj
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.automj.MjSessionCatalog
 
 import scala.collection.mutable
 
 /**
  * Created by wuxiaoqi on 17-12-8.
  */
-case class EstimatorBasedSample(meta: MetaManager, conf: SparkConf) extends JoinSizeEstimator(meta, conf) {
+case class EstimatorBasedSample(catalog: MjSessionCatalog, conf: SparkConf) extends JoinSizeEstimator(catalog, conf) {
   override protected def costCore: Long = {
     val samples:Seq[DataFrame] = getSamples()
 

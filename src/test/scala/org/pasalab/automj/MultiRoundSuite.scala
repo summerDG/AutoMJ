@@ -1,18 +1,19 @@
 package org.pasalab.automj
 
 import org.apache.spark.sql.QueryTest
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.execution.command.CreateViewCommand
+import org.apache.spark.sql.test.SharedSQLContext
 
 
 /**
  * Created by wuxiaoqi on 17-12-13.
  */
-class MultiRoundSuite extends QueryTest with SharedMjContext with ArgumentsSet{
+class MultiRoundSuite extends QueryTest with SharedSQLContext with ArgumentsSet{
   test("left depth optimize method") {
     val dataSource = lineData
-    dataSource.info.foreach(info => meta.registerTable(info.name, info.size, info.count, info.cardinality, info.sample, info.p))
-    val multiRoundStrategy: MultiRoundStrategy = new LeftDepthStrategy(meta)
+    val multiRoundStrategy: MultiRoundStrategy = new LeftDepthStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])
     val plan = multiRoundStrategy.optimize(dataSource.joinConditions, dataSource.relations)
 
     assert(plan.isInstanceOf[Join], "Not Join Node")

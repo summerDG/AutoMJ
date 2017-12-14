@@ -1,4 +1,5 @@
 package org.pasalab.automj
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
 import org.apache.spark.sql.execution.KeysAndTableId
@@ -8,7 +9,7 @@ import scala.collection.mutable
 /**
  * Created by wuxiaoqi on 17-12-7.
  */
-case class ShareStrategy(meta: MetaManager)  extends OneRoundStrategy(meta) {
+case class ShareStrategy(catalog: MjSessionCatalog)  extends OneRoundStrategy(catalog) {
   override protected def optimizeCore: LogicalPlan = {
     ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)
@@ -20,7 +21,7 @@ case class ShareStrategy(meta: MetaManager)  extends OneRoundStrategy(meta) {
     }.groupBy(_._1).map {
       case (rId, sIds) => (rId, numShufflePartitions / sIds.map(x => shares(x._2)).fold(1)(_ * _))
     }
-    val statistics = relations.map(x => meta.getInfo(x))
+    val statistics = relations.map(x => catalog.getInfo(x))
 
     rIdToShare.map {
       case (rId, replicate) => statistics(rId).size * replicate

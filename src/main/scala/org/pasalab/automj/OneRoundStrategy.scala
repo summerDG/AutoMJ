@@ -1,6 +1,7 @@
 package org.pasalab.automj
 
 import org.apache.spark.internal.Logging
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.KeysAndTableId
@@ -12,7 +13,7 @@ import scala.util.Random
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class OneRoundStrategy(meta: MetaManager) extends AttributesOrder with Logging{
+abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrder with Logging{
   protected var reorderedKeysEachTable: Seq[Seq[Expression]] = null
   protected var bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -40,7 +41,7 @@ abstract class OneRoundStrategy(meta: MetaManager) extends AttributesOrder with 
     }.toSeq
     val equivalenceClasses = Graph(initEdges).connectComponent()
 
-    val statistics: Seq[TableInfo] = relations.flatMap(r => meta.getInfo(r))
+    val statistics: Seq[TableInfo] = relations.flatMap(r => catalog.getInfo(r))
 
     val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
       case (nodes, cId) =>

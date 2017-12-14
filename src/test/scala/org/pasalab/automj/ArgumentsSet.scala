@@ -2,6 +2,7 @@ package org.pasalab.automj
 
 import org.apache.commons.io.IOUtils
 import org.apache.spark.sql._
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.types.IntegerType
@@ -52,21 +53,21 @@ trait ArgumentsSet {self =>
     aDF.createOrReplaceTempView("a")
 
     val bDF = spark.sparkContext.parallelize(
-        XyData(1, 1) ::
-        XyData(1, 2) ::
-        XyData(2, 1) ::
-        XyData(2, 2) ::
-        XyData(3, 1) ::
-        XyData(3, 2) :: Nil, 2).toDF()
+    XyData(1, 1) ::
+    XyData(1, 2) ::
+    XyData(2, 1) ::
+    XyData(2, 2) ::
+    XyData(3, 1) ::
+    XyData(3, 2) :: Nil, 2).toDF()
     bDF.createOrReplaceTempView("b")
 
     val cDF = spark.sparkContext.parallelize(
-        YzData(1, 1) ::
-        YzData(1, 2) ::
-        YzData(2, 1) ::
-        YzData(2, 2) ::
-        YzData(3, 1) ::
-        YzData(3, 2) :: Nil, 2).toDF()
+    YzData(1, 1) ::
+    YzData(1, 2) ::
+    YzData(2, 1) ::
+    YzData(2, 2) ::
+    YzData(3, 1) ::
+    YzData(3, 2) :: Nil, 2).toDF()
     cDF.createOrReplaceTempView("c")
 
     val info: Seq[TableInfo] = Seq[TableInfo](
@@ -74,6 +75,12 @@ trait ArgumentsSet {self =>
       TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
       TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1)
     )
+
+    spark.sessionState.catalog match {
+      case catalog: MjSessionCatalog =>
+        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+    }
+
     Arguments(attributes, keys, joinConditions, relations, info)
   }
 
@@ -182,6 +189,11 @@ trait ArgumentsSet {self =>
       TableInfo("f", 10, 10, Map[String, Long]("s"->13, "y"->10), fDF, 1)
     )
 
+    spark.sessionState.catalog match {
+      case catalog: MjSessionCatalog =>
+        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+    }
+
     Arguments(attributes, keys, joinConditions, relations, info)
   }
 
@@ -246,12 +258,18 @@ trait ArgumentsSet {self =>
         ZData(6) :: Nil, 2).toDF()
     dDF.createOrReplaceTempView("d")
 
+
+
     val info: Seq[TableInfo] = Seq[TableInfo](
-      TableInfo("a", 10, 10, Map[String, Long]("x"->5), aDF, 1),
-      TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
-      TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
-      TableInfo("d", 10, 10, Map[String, Long]("z"->9), dDF, 1)
+    TableInfo("a", 10, 10, Map[String, Long]("x"->5), aDF, 1),
+    TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
+    TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
+    TableInfo("d", 10, 10, Map[String, Long]("z"->9), dDF, 1)
     )
+    spark.sessionState.catalog match {
+      case catalog: MjSessionCatalog =>
+        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+    }
 
     Arguments(attributes, keys, joinConditions, relations, info)
   }
@@ -414,6 +432,11 @@ trait ArgumentsSet {self =>
       TableInfo("i", 10, 10, Map[String, Long]("r"->8, "w"->10), iDF, 1),
       TableInfo("j", 10, 10, Map[String, Long]("w"->8), jDF, 1)
     )
+
+    spark.sessionState.catalog match {
+      case catalog: MjSessionCatalog =>
+        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+    }
     Arguments(attributes, keys, joinConditions, relations, info)
   }
   def readFrom(fileName: String): Seq[Row] = {

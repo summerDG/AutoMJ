@@ -1,17 +1,18 @@
 package org.pasalab.automj
 
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.execution.joins.ExpressionAndAttributes
+import org.apache.spark.sql.test.SharedSQLContext
 
 /**
  * Created by wuxiaoqi on 17-12-12.
  */
-class OneRoundStrategySuite extends SharedMjContext with ArgumentsSet{
+class OneRoundStrategySuite extends SharedSQLContext with ArgumentsSet{
   test("test refresh method") {
     val dataSource = triangleData
-    dataSource.info.foreach(info => meta.registerTable(info.name, info.size, info.count, info.cardinality, info.sample, info.p))
 
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(meta)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val closures = oneRoundStrategy.getClosures()
     val shares = oneRoundStrategy.getShares
@@ -45,9 +46,7 @@ class OneRoundStrategySuite extends SharedMjContext with ArgumentsSet{
   }
   test("test cost model") {
     val dataSource = triangleData
-    dataSource.info.foreach(info => meta.registerTable(info.name, info.size, info.count, info.cardinality, info.sample, info.p))
-
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(meta)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val cost: Long = oneRoundStrategy.cost()
     assert(cost == 60, s"Communication Cost is not correct, $cost != 60")

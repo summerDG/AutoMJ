@@ -1,6 +1,7 @@
 package org.pasalab.automj
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.{Column, DataFrame}
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -8,7 +9,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class JoinSizeEstimator(meta: MetaManager, conf: SparkConf) {
+abstract class JoinSizeEstimator(catalog: MjSessionCatalog, conf: SparkConf) {
   protected var p: Double = 1
   protected var joinConditions: Map[(Int, Int), Column] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -35,12 +36,12 @@ abstract class JoinSizeEstimator(meta: MetaManager, conf: SparkConf) {
   }
 
   def getProbability(): Seq[Double] = {
-    val p = relations.flatMap(l => meta.getInfo(l)).map(_.p)
+    val p = relations.flatMap(l => catalog.getInfo(l)).map(_.p)
     assert(relations.length == p.length, "some relations have no sample probability")
     p
   }
   def getSamples(): Seq[DataFrame] = {
-    val s = relations.flatMap (l => meta.getInfo(l)).map(_.sample)
+    val s = relations.flatMap (l => catalog.getInfo(l)).map(_.sample)
     assert(relations.length == s.length, "some relations have no sample")
     s
   }

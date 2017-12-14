@@ -18,34 +18,25 @@
 package org.apache.spark.sql.test
 
 import org.apache.spark.{SparkConf, SparkContext}
-import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.{SessionState, SessionStateBuilder, SQLConf, WithTestConf}
+import org.apache.spark.sql.{MjSession, SparkSession}
+import org.apache.spark.sql.internal.{SQLConf, SessionState, SessionStateBuilder, WithTestConf}
+import org.pasalab.automj.MjConfigConst
 
 /**
  * A special `SparkSession` prepared for testing.
  */
-private[sql] class TestSparkSession(sc: SparkContext) extends SparkSession(sc) { self =>
+private[sql] class TestSparkSession(sc: SparkContext) extends MjSession(sc) { self =>
   def this(sparkConf: SparkConf) {
     this(new SparkContext("local[2]", "test-sql-context",
-      sparkConf.set("spark.sql.testkey", "true")))
+      sparkConf.set("spark.sql.testkey", "true")
+        .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
+        .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
+        .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+    ))
   }
 
   def this() {
     this(new SparkConf)
-  }
-
-  @transient
-  override lazy val sessionState: SessionState = {
-    new TestSQLSessionStateBuilder(this, None).build()
-  }
-
-  // Needed for Java tests
-  def loadTestData(): Unit = {
-    testData.loadTestData()
-  }
-
-  private object testData extends SQLTestData {
-    protected override def spark: SparkSession = self
   }
 }
 
@@ -58,7 +49,7 @@ private[sql] object TestSQLContext {
   val overrideConfs: Map[String, String] =
   Map(
     // Fewer shuffle partitions to speed up testing.
-    SQLConf.SHUFFLE_PARTITIONS.key -> "5")
+    SQLConf.SHUFFLE_PARTITIONS.key -> "8")
 }
 
 private[sql] class TestSQLSessionStateBuilder(

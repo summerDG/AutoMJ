@@ -1,6 +1,8 @@
 package org.pasalab.automj
 
-import org.apache.spark.sql.MjContext
+import org.apache.spark.sql.MjSession
+import org.apache.spark.sql.catalyst.optimizer.MjOptimizer
+import org.apache.spark.sql.execution.ShareJoinSelection
 import org.apache.spark.sql.test.SharedSQLContext
 
 /**
@@ -8,19 +10,22 @@ import org.apache.spark.sql.test.SharedSQLContext
  */
 class MjContextSuite extends SharedSQLContext{
   test("strategy test") {
-    val conf = spark.sparkContext.getConf
+    val conf = sparkContext.getConf
     conf.set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
     conf.set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
     conf.set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
-    val mjContext = new MjContext(spark)
-    if (!mjContext.oneRoundStrategy.isInstanceOf[ShareStrategy]) {
-      fail("one round strategy is not specific class")
+    val mjSession = new MjSession(sparkContext)
+    val optimizer = mjSession.sessionState.optimizer.extendedOperatorOptimizationRules.head
+
+    assert(optimizer.isInstanceOf[MjOptimizer], "Not MjOptimizer!!!")
+    optimizer match {
+      case m: MjOptimizer =>
+        assert(m.multiRoundStrategy.isDefined, "not define multiRoundStrategy")
+        assert(m.oneRoundStrategy.isDefined, "not define oneRoundStrategy")
+        assert(m.joinSizeEstimator.isDefined, "not define joinSizeEstimator")
     }
-    if (!mjContext.multiRoundStrategy.isInstanceOf[LeftDepthStrategy]) {
-      fail("multi round strategy is not specific class")
-    }
-    if (!mjContext.joinSizeEstimator.isInstanceOf[EstimatorBasedSample]) {
-      fail("join size estimator is not specific class")
-    }
+
+    val strategy = mjSession.sessionState.planner.extraPlanningStrategies.head
+    assert(strategy.isInstanceOf[ShareJoinSelection], "Not ShareJoinSelection!!!")
   }
 }
