@@ -3,6 +3,7 @@ package org.apache.spark.sql
 import java.io.Closeable
 
 import org.apache.spark.SparkContext
+import org.apache.spark.annotation.InterfaceStability
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionStateBuilder
 import org.apache.spark.sql.internal.{SessionState, SharedState}
@@ -24,10 +25,25 @@ class MjSession private(
     parentSessionState
       .map(_.clone(this))
       .getOrElse {
-        val confs = session.conf.getAll
+        val configs = session.conf.getAll
         val state = new MjSessionStateBuilder(session, None).build()
-        confs.foreach{case (k,v) => state.conf.setConfString(k, v)}
+        configs.foreach{case (k,v) => state.conf.setConfString(k, v)}
         state
       }
+  }
+
+  @InterfaceStability.Unstable
+  @transient
+  override lazy val sharedState: SharedState = {
+    existingSharedState.getOrElse(new SharedState(sparkContext))
+  }
+  override def newSession(): SparkSession = {
+    new MjSession(sparkContext, Some(sharedState), parentSessionState = None, extensions)
+  }
+
+  override private[sql] def cloneSession(): SparkSession = {
+    val result = new MjSession(sparkContext, Some(sharedState), Some(sessionState), extensions)
+    result.sessionState // force copy of SessionState
+    result
   }
 }
