@@ -186,19 +186,6 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
   override def children: Seq[SparkPlan] = children
 }
 
-object LeapFrogJoinExec {
-  def apply(
-             keysEachRelation: Seq[Seq[Expression]],
-             bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])],
-             conditions: Option[Expression],
-             relations: Seq[SparkPlan],
-             numShufflePartitions: Int,
-             closures: Seq[Seq[(ExpressionAndAttributes, Int)]]): LeapFrogJoinExec = {
-    new LeapFrogJoinExec(keysEachRelation,
-      bothKeysEachCondition, conditions, relations, numShufflePartitions,
-      closures)
-  }
-}
 
 class LeapFrogJoinScanner(
                            keyGenerators: Seq[Seq[(Projection, Int)]],

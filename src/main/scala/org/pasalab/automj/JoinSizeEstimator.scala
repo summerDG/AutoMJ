@@ -19,7 +19,7 @@ abstract class JoinSizeEstimator(catalog: MjSessionCatalog, conf: SparkConf) {
       case (k, (lk, rk)) =>
         val expr = lk.zip(rk).map{
           case (l, r) =>
-            EqualTo(l, r)
+            EqualTo(l, r).asInstanceOf[Expression]
         }.reduce((a, b) => And(a, b))
         (k, new Column(expr))
     }

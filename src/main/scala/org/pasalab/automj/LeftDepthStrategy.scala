@@ -29,7 +29,7 @@ case class LeftDepthStrategy(catalog: MjSessionCatalog) extends MultiRoundStrate
     def generateJoin(v: Int, n: Int): Unit = {
       val (left, right) = joinConditions((v, n))
       val condition: Expression = left.zip(right).map {
-        case (l, r) => EqualTo(l, r)
+        case (l, r) => EqualTo(l, r).asInstanceOf[Expression]
       }.reduce((l, r) => And(l, r))
       join = Join(join, relations(n), Inner, Some(condition))
     }

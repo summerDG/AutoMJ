@@ -2,7 +2,7 @@ package org.apache.spark.sql.execution
 
 import org.apache.spark.sql.Strategy
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.expressions.{Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Expression, PredicateHelper, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
 import org.apache.spark.sql.execution.exchange.ShareExchange
 import org.apache.spark.sql.execution.joins.LeapFrogJoinExec
@@ -29,8 +29,30 @@ case class ShareJoinSelection(meta: MjSessionCatalog, conf: SQLConf) extends Str
         ShareExchange(partitionings(i), reorderedKeysEachTable(i), children(i))
       }
 
+      val requiredOrderings = partitionings.map(_.expressions.map(SortOrder(_, Ascending)))
+      val childrenWithSorter: Seq[SparkPlan] = exchanges.zip(requiredOrderings).map {
+        case (child, requiredOrdering) =>
+          if (requiredOrdering.nonEmpty) {
+            val orderingMatched = if (requiredOrdering.length > child.outputOrdering.length) {
+              false
+            } else {
+              requiredOrdering.zip(child.outputOrdering).forall{
+                case (requiredOrder, childOutputOrder) =>
+                  childOutputOrder.satisfies(requiredOrder)
+              }
+            }
+            if (!orderingMatched) {
+              SortExec(requiredOrdering, global = false, child = child)
+            } else {
+              child
+            }
+          } else {
+            child
+          }
+      }
+
       LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
-        conditions, exchanges, numShufflePartitions, closures) :: Nil
+        conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
   }
 
   def defaultNumPreShufflePartitions: Int = conf.numShufflePartitions

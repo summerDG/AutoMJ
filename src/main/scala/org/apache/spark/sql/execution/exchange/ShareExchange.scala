@@ -4,7 +4,7 @@ import org.apache.spark._
 import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, BindReferences, Expression, SortOrder, SortPrefix, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, BindReferences, Expression, SortOrder, SortPrefix, UnsafeProjection}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartitioning}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
@@ -17,17 +17,14 @@ case class ShareExchange(partitioning: HcPartitioning,
                          projExprs: Seq[Expression],
                          child: SparkPlan) extends Exchange {
   override lazy val metrics = Map(
-    "dataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size"),
-    "sortTime" -> SQLMetrics.createTimingMetric(sparkContext, "sort time"),
-    "peakMemory" -> SQLMetrics.createSizeMetric(sparkContext, "peak memory"),
-    "spillSize" -> SQLMetrics.createSizeMetric(sparkContext, "spill size"))
+    "dataSize" -> SQLMetrics.createSizeMetric(sparkContext, "data size"))
 
   override def nodeName: String = "ShareExchange"
 
   var postPartitioning: Partitioning = null
   override def outputPartitioning: Partitioning =
     if (postPartitioning != null) postPartitioning else UnknownPartitioning(partitioning.numPartitions)
-  private[exchange] def prepareShuffleDependency(): ShuffleDependency[Int, InternalRow, InternalRow] = {
+  private def prepareShuffleDependency(): ShuffleDependency[Int, InternalRow, InternalRow] = {
     val serializer = new UnsafeRowSerializer(child.output.size, longMetric("dataSize"))
     ShareExchange.prepareShuffleDependency(child.execute(), child.output,
       partitioning, serializer)
@@ -46,7 +43,7 @@ case class ShareExchange(partitioning: HcPartitioning,
     preparePostShuffleRDD(shuffleDependency, partitionStartIndices)
   }
 
-  private[exchange] def preparePostShuffleRDD(
+  private def preparePostShuffleRDD(
                                                shuffleDependency: ShuffleDependency[Int, InternalRow, InternalRow],
                                                specifiedPartitionStartIndices: Option[Array[Int]] = None): ShuffledRowRDD = {
     // If an array of partition start indices is provided, we need to use this array
@@ -58,70 +55,13 @@ case class ShareExchange(partitioning: HcPartitioning,
 
     new ShuffledRowRDD(shuffleDependency, specifiedPartitionStartIndices)
   }
-  private def requiredOrders(keys: Seq[Expression]): Seq[SortOrder] = {
-    // This must be ascending in order to agree with the `keyOrdering` defined in `doExecute()`.
-    keys.map(SortOrder(_, Ascending))
-  }
-  def createSorter(): UnsafeExternalRowSorter = {
-    val enableRadixSort = sqlContext.conf.enableRadixSort
-    val sortOrder: Seq[SortOrder] = requiredOrders(partitioning.expressions)
-    val ordering = newOrdering(sortOrder, output)
 
-    // The comparator for comparing prefix
-    val boundSortExpression = BindReferences.bindReference(sortOrder.head, output)
-    val prefixComparator = SortPrefixUtils.getPrefixComparator(boundSortExpression)
-
-    val canUseRadixSort = enableRadixSort && sortOrder.length == 1 &&
-      SortPrefixUtils.canSortFullyWithPrefix(boundSortExpression)
-
-    // The generator for prefix
-    val prefixExpr = SortPrefix(boundSortExpression)
-    val prefixProjection = UnsafeProjection.create(Seq(prefixExpr))
-    val prefixComputer = createPrefixGeneratorForHC(prefixProjection, prefixExpr)
-
-    val pageSize = SparkEnv.get.memoryManager.pageSizeBytes
-    val sorter = new UnsafeExternalRowSorter(
-      schema, ordering, prefixComparator, prefixComputer, pageSize, canUseRadixSort)
-
-    sorter
-  }
-  def createPrefixGeneratorForHC(
-                                  prefixProjection: UnsafeProjection,
-                                  prefixExpr: SortPrefix): UnsafeExternalRowSorter.PrefixComputer = {
-
-    val prefixComputer = new UnsafeExternalRowSorter.PrefixComputer {
-      private val result = new UnsafeExternalRowSorter.PrefixComputer.Prefix
-      override def computePrefix(row: InternalRow):
-      UnsafeExternalRowSorter.PrefixComputer.Prefix = {
-        val prefix = prefixProjection.apply(row)
-        result.isNull = prefix.isNullAt(0)
-        result.value = if (result.isNull) prefixExpr.nullValue else prefix.getLong(0)
-        result
-      }
-    }
-    prefixComputer
-  }
-
+  private var cachedShuffleRDD: ShuffledRowRDD = null
   override protected def doExecute(): RDD[InternalRow] = {
-    val peakMemory = longMetric("peakMemory")
-    val spillSize = longMetric("spillSize")
-    val sortTime = longMetric("sortTime")
-
-    postShuffleRDD.mapPartitionsInternal { iter =>
-      val sorter = createSorter()
-
-      val metrics = TaskContext.get().taskMetrics()
-      // Remember spill data size of this task before execute this operator so that we can
-      // figure out how many bytes we spilled for this operator.
-      val spillSizeBefore = metrics.memoryBytesSpilled
-      val sortedIterator = sorter.sort(iter.asInstanceOf[Iterator[UnsafeRow]])
-      sortTime += sorter.getSortTimeNanos / 1000000
-      peakMemory += sorter.getPeakMemoryUsage
-      spillSize += metrics.memoryBytesSpilled - spillSizeBefore
-      metrics.incPeakExecutionMemory(sorter.getPeakMemoryUsage)
-
-      sortedIterator
+    if (cachedShuffleRDD == null) {
+      cachedShuffleRDD = postShuffleRDD
     }
+    cachedShuffleRDD
   }
 }
 object ShareExchange {

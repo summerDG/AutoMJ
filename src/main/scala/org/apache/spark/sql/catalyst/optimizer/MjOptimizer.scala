@@ -84,7 +84,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                   relationIds.contains(l) || relationIds.contains(r)
               }.flatMap {
                 case ((l, r), (lk,rk)) =>
-                  lk.zip(rk).map(x => EqualTo(x._1, x._2))
+                  lk.zip(rk).map(x => EqualTo(x._1, x._2).asInstanceOf[Expression])
               }.reduce((l,r) => And(l, r))
 
               (multiRoundCore.optimize(branchMap, relations), combinedCondition)

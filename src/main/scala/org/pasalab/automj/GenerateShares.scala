@@ -51,11 +51,11 @@ object GenerateShares {
             for (i <- 1 to dims) {
                 GLPK.glp_set_col_name(lp, i, "e" + i)
                 GLPK.glp_set_col_kind(lp, i, GLPKConstants.GLP_CV)
-                GLPK.glp_set_col_bnds(lp, i, GLPKConstants.GLP_DB, 0., 1.)
+                GLPK.glp_set_col_bnds(lp, i, GLPKConstants.GLP_DB, 0.0, 1.0)
             }
             GLPK.glp_set_col_name(lp, dims + 1, "lamda")
             GLPK.glp_set_col_kind(lp, dims + 1, GLPKConstants.GLP_CV)
-            GLPK.glp_set_col_bnds(lp, dims + 1, GLPKConstants.GLP_LO, 0., 1)
+            GLPK.glp_set_col_bnds(lp, dims + 1, GLPKConstants.GLP_LO, 0.0, 1)
 
             // Allocate memory
             ind = GLPK.new_intArray(dims + 2)
@@ -64,10 +64,10 @@ object GenerateShares {
             GLPK.glp_add_rows(lp, 1 + sizes.length)
 
             GLPK.glp_set_row_name(lp, 1, "c1")
-            GLPK.glp_set_row_bnds(lp, 1, GLPKConstants.GLP_UP, 0, 1.)
+            GLPK.glp_set_row_bnds(lp, 1, GLPKConstants.GLP_UP, 0, 1.0)
             for (i <- 1 to dims) {
                 GLPK.intArray_setitem(ind, i, i)
-                GLPK.doubleArray_setitem(value, i, 1.)
+                GLPK.doubleArray_setitem(value, i, 1.0)
             }
             GLPK.glp_set_mat_row(lp, 1, dims, ind, value)
 
@@ -78,7 +78,7 @@ object GenerateShares {
                 GLPK.glp_set_row_bnds(lp, num, GLPKConstants.GLP_LO, sizes(j), 1)
                 for (i <- 0 to tables(j).length) {
                     GLPK.intArray_setitem(ind, i + 1, tables(j)(i))
-                    GLPK.doubleArray_setitem(value, i + 1, 1.)
+                    GLPK.doubleArray_setitem(value, i + 1, 1.0)
                 }
 
                 GLPK.intArray_setitem(ind, tables(j).length + 1, dims + 1)
@@ -93,8 +93,8 @@ object GenerateShares {
             // define objective
             GLPK.glp_set_obj_name(lp, "z")
             GLPK.glp_set_obj_dir(lp, GLPKConstants.GLP_MIN)
-            GLPK.glp_set_obj_coef(lp, 0, 0.)
-            GLPK.glp_set_obj_coef(lp, dims + 1, 1.)
+            GLPK.glp_set_obj_coef(lp, 0, 0.0)
+            GLPK.glp_set_obj_coef(lp, dims + 1, 1.0)
 
             GLPK.glp_write_lp(lp, null, "shares.lp")
 

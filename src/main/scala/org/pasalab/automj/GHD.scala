@@ -4,9 +4,8 @@ package org.pasalab.automj
   * Created by summerDG on 2017/11/30.
   */
 class GHD(children: Seq[GHD]) {
-  def logGTA: GHD = {
-
-  }
+  // TODO: 之后完善
+  def logGTA: GHD = this
 }
 object GHD {
   def apply(hyperGraph: HyperGraph): GHD = {

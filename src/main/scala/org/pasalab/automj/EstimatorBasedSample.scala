@@ -58,7 +58,7 @@ case class EstimatorBasedSample(catalog: MjSessionCatalog, conf: SparkConf) exte
             }
           }
           //TODO: persist后性能会好
-          communication += join.count() / p
+          communication += (join.count() / p).toLong
         }
         newVertices ++= neighbourhood
       }

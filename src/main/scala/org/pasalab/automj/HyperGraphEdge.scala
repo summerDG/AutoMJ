@@ -8,8 +8,8 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
  */
 case class HyperGraphEdge(relation: LogicalPlan,
                           vertices: Seq[Int]) extends PredicateHelper{
-  def joinKeys: Seq[Seq[Expression]] = {
-    vertices.map(_.equivalenceClass.filter(e => canEvaluate(e, relation)))
-  }
+//  def joinKeys: Seq[Seq[Expression]] = {
+//    vertices.map(_.equivalenceClass.filter(e => canEvaluate(e, relation)))
+//  }
   def vertexIds: Seq[Int] = vertices
 }

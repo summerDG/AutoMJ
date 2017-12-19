@@ -1,9 +1,9 @@
-package org.pasalab.automj
+package org.apache.spark.sql
 
-import org.apache.spark.sql.MjSession
 import org.apache.spark.sql.catalyst.optimizer.MjOptimizer
 import org.apache.spark.sql.execution.ShareJoinSelection
 import org.apache.spark.sql.test.SharedSQLContext
+import org.pasalab.automj.MjConfigConst
 
 /**
  * Created by wuxiaoqi on 17-12-10.
