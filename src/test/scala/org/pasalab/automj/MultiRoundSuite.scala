@@ -10,7 +10,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 /**
  * Created by wuxiaoqi on 17-12-13.
  */
-class MultiRoundSuite extends QueryTest with SharedSQLContext with ArgumentsSet{
+class MultiRoundSuite extends QueryTest with SharedSQLContext{
   test("left depth optimize method") {
     val dataSource = lineData
     val multiRoundStrategy: MultiRoundStrategy = new LeftDepthStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])

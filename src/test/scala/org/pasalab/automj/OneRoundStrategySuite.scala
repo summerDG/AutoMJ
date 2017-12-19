@@ -8,7 +8,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 /**
  * Created by wuxiaoqi on 17-12-12.
  */
-class OneRoundStrategySuite extends SharedSQLContext with ArgumentsSet{
+class OneRoundStrategySuite extends SharedSQLContext{
   test("test refresh method") {
     val dataSource = triangleData
 

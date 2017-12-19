@@ -6,7 +6,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 /**
  * Created by wuxiaoqi on 17-12-12.
  */
-class SizeEstimatorSuite extends SharedSQLContext with ArgumentsSet{
+class SizeEstimatorSuite extends SharedSQLContext{
   test("test cost model") {
     val dataSource = triangleData
     val expectedSize = 12

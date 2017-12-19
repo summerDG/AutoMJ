@@ -2,25 +2,28 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="25de8ba1-3af4-496a-8a58-25210cbbc2f6" name="Default" comment="">
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/catalyst/optimizer/MjOptimizerSuite.scala" afterPath="" />
-      <change type="MOVED" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MjContextSuite.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/MjContextSuite.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/test/resources/log4j.properties" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/libraries/Maven__org_scala_lang_modules_scala_xml_2_11_1_0_2.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/.idea/libraries/Maven__org_scalatest_scalatest_2_11_2_2_6.xml" afterPath="" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/ArgumentsSet.scala" afterPath="" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/compiler.xml" afterPath="$PROJECT_DIR$/.idea/compiler.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/libraries/Maven__org_scala_lang_scala_library_2_11_8.xml" afterPath="$PROJECT_DIR$/.idea/libraries/Maven__org_scala_lang_scala_library_2_11_8.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/scala_compiler.xml" afterPath="$PROJECT_DIR$/.idea/scala_compiler.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/catalyst/optimizer/MjOptimizer.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/catalyst/optimizer/MjOptimizer.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/ShareJoinSelection.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/ShareJoinSelection.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/exchange/ShareExchange.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/exchange/ShareExchange.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/joins/LeapFrogJoinExec.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/joins/LeapFrogJoinExec.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/EstimatorBasedSample.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/EstimatorBasedSample.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/GHD.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/GHD.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/GenerateShares.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/GenerateShares.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/HyperGraphEdge.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/HyperGraphEdge.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/JoinSizeEstimator.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/JoinSizeEstimator.scala" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/LeftDepthStrategy.scala" afterPath="$PROJECT_DIR$/src/main/scala/org/pasalab/automj/LeftDepthStrategy.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/AutoMJ.iml" afterPath="$PROJECT_DIR$/AutoMJ.iml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/pom.xml" afterPath="$PROJECT_DIR$/pom.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala" afterPath="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala" />
     </list>
     <ignored path="AutoMJ.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
     <ignored path="$PROJECT_DIR$/target/" />
+    <ignored path="$PROJECT_DIR$/ta/" />
+    <ignored path="$PROJECT_DIR$/taeget/" />
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -37,75 +40,77 @@
   </component>
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
-      <file leaf-file-name="OneRoundStrategy.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/pasalab/automj/OneRoundStrategy.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="16" column="39" selection-start-line="16" selection-start-column="39" selection-end-line="16" selection-end-column="39" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MultiRoundStrategy.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/pasalab/automj/MultiRoundStrategy.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="144">
-              <caret line="10" column="59" selection-start-line="10" selection-start-column="59" selection-end-line="10" selection-end-column="59" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ShareStrategy.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/pasalab/automj/ShareStrategy.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="126">
-              <caret line="12" column="41" selection-start-line="12" selection-start-column="41" selection-end-line="12" selection-end-column="41" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MjSession.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/MjSession.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="360">
-              <caret line="26" column="18" selection-start-line="26" selection-start-column="18" selection-end-line="26" selection-end-column="18" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="ShareExchange.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/exchange/ShareExchange.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1026">
-              <caret line="57" column="0" selection-start-line="57" selection-start-column="0" selection-end-line="57" selection-end-column="0" />
-              <folding>
-                <element signature="e#49#74#0" expanded="true" />
-              </folding>
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file leaf-file-name="MultiJoinSuite.scala" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="450">
-              <caret line="26" column="43" selection-start-line="26" selection-start-column="43" selection-end-line="26" selection-end-column="43" />
+            <state relative-caret-position="126">
+              <caret line="8" column="60" selection-start-line="8" selection-start-column="60" selection-end-line="8" selection-end-column="60" />
               <folding />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="ShareJoinSelection.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/ShareJoinSelection.scala">
+      <file leaf-file-name="MultiRoundSuite.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="684">
-              <caret line="38" column="64" selection-start-line="38" selection-start-column="64" selection-end-line="38" selection-end-column="64" />
+            <state relative-caret-position="216">
+              <caret line="16" column="91" selection-start-line="16" selection-start-column="91" selection-end-line="16" selection-end-column="91" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SizeEstimatorSuite.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="10" column="33" selection-start-line="10" selection-start-column="33" selection-end-line="10" selection-end-column="33" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="OneRoundStrategySuite.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="126">
+              <caret line="10" column="52" selection-start-line="10" selection-start-column="52" selection-end-line="10" selection-end-column="52" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SharedSQLContext.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SharedSQLContext.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="30" column="38" selection-start-line="30" selection-start-column="38" selection-end-line="30" selection-end-column="38" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SQLTestUtils.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="342">
+              <caret line="55" column="16" selection-start-line="55" selection-start-column="16" selection-end-line="55" selection-end-column="16" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="SQLTestData.scala" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="4788">
+              <caret line="694" column="5" selection-start-line="694" selection-start-column="5" selection-end-line="694" selection-end-column="5" />
               <folding>
-                <element signature="e#40#76#0" expanded="true" />
+                <element signature="e#837#877#0" expanded="true" />
+                <element signature="e#8768#11417#0" expanded="false" />
+                <element signature="e#11464#16291#0" expanded="false" />
+                <element signature="e#16336#19281#0" expanded="false" />
+                <element signature="e#19330#26357#0" expanded="false" />
               </folding>
             </state>
           </provider>
@@ -121,22 +126,28 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="TestSQLContext.scala" pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/TestSQLContext.scala">
+      <file leaf-file-name="pom.xml" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/pom.xml">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="72">
-              <caret line="22" column="39" selection-start-line="22" selection-start-column="39" selection-end-line="22" selection-end-column="39" />
-              <folding />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file leaf-file-name="MjSessionStateBuilder.scala" pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/automj/MjSessionStateBuilder.scala">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="234">
-              <caret line="20" column="8" selection-start-line="20" selection-start-column="8" selection-end-line="20" selection-end-column="8" />
-              <folding />
+            <state relative-caret-position="114">
+              <caret line="312" column="25" selection-start-line="312" selection-start-column="25" selection-end-line="312" selection-end-column="25" />
+              <folding>
+                <element signature="n#plugin#0;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#1;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#2;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#3;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#4;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#5;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#6;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#7;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#8;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#0;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#5;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#6;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#7;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#8;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+                <element signature="n#plugin#9;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -154,9 +165,6 @@
   <component name="IdeDocumentHistory">
     <option name="CHANGED_PATHS">
       <list>
-        <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SharedSQLContext.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/DebugFilesystem.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/QueryTest.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/SparkFunSuite.scala" />
@@ -195,16 +203,19 @@
         <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MjContextSuite.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SharedMjContext.scala" />
         <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/TestSQLContext.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala" />
-        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/ArgumentsSet.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/automj/MjSessionStateBuilder.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/MjSession.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/ShareExchange.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/ShareJoinSelection.scala" />
         <option value="$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/exchange/ShareExchange.scala" />
+        <option value="$PROJECT_DIR$/src/test/resources/log4j.properties" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/ArgumentsSet.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala" />
+        <option value="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala" />
+        <option value="$PROJECT_DIR$/pom.xml" />
       </list>
     </option>
   </component>
@@ -254,8 +265,7 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
-      <pane id="PackagesPane" />
+      <pane id="Scratches" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -383,6 +393,10 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="test" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="resources" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -600,7 +614,8 @@
           </PATH>
         </subPane>
       </pane>
-      <pane id="Scratches" />
+      <pane id="Scope" />
+      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -613,20 +628,21 @@
     <property name="SearchEverywhereHistoryKey" value="Cata&#9;FILE&#9;file://C:/Users/summerDG/github/AutoMJ/src/main/scala/org/pasalab/automj/Catalog.scala" />
   </component>
   <component name="RecentsManager">
-    <key name="MoveFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/test" />
-    </key>
     <key name="MoveClassesOrPackagesDialog.RECENTS_KEY">
       <recent name="org.apache.spark.sql" />
       <recent name="org.pasalab.automj" />
+    </key>
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/test/resources" />
+      <recent name="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql" />
     </key>
     <key name="CopyClassDialog.RECENTS_KEY">
       <recent name="org.apache.spark.sql.catalyst.plans" />
       <recent name="org.apache.spark" />
       <recent name="org.pasalab.automj" />
     </key>
-    <key name="CopyFile.RECENT_KEYS">
-      <recent name="$PROJECT_DIR$/src/test/scala/org/apache/spark/sql" />
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/src/test" />
     </key>
   </component>
   <component name="RunDashboard">
@@ -1040,21 +1056,11 @@
     </breakpoint-manager>
     <watches-manager />
   </component>
+  <component name="antWorkspaceConfiguration">
+    <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
+    <option name="FILTER_TARGETS" value="false" />
+  </component>
   <component name="editorHistoryManager">
-    <entry file="file://$PROJECT_DIR$/src/test/resources/line">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="198">
-          <caret line="11" column="13" selection-start-line="11" selection-start-column="13" selection-end-line="11" selection-end-column="13" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/resources/clique">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="414">
-          <caret line="23" column="25" selection-start-line="23" selection-start-column="25" selection-end-line="23" selection-end-column="25" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/resources/arbitrary">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="622">
@@ -1125,59 +1131,10 @@
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SharedMjContext.scala" />
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="12" column="61" selection-start-line="12" selection-start-column="61" selection-end-line="12" selection-end-column="61" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/ArgumentsSet.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="195">
-          <caret line="14" column="6" selection-start-line="14" selection-start-column="6" selection-end-line="14" selection-end-column="6" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-314">
-          <caret line="10" column="47" selection-start-line="10" selection-start-column="47" selection-end-line="10" selection-end-column="47" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="144">
-          <caret line="8" column="49" selection-start-line="8" selection-start-column="49" selection-end-line="8" selection-end-column="49" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/ProcessTestUtils.scala">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="108">
           <caret line="23" column="7" selection-start-line="23" selection-start-column="7" selection-end-line="23" selection-end-column="7" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SharedSQLContext.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="162">
-          <caret line="30" column="38" selection-start-line="30" selection-start-column="38" selection-end-line="30" selection-end-column="38" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="342">
-          <caret line="55" column="16" selection-start-line="55" selection-start-column="16" selection-end-line="55" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="648">
-          <caret line="62" column="26" selection-start-line="62" selection-start-column="26" selection-end-line="62" selection-end-column="26" />
         </state>
       </provider>
     </entry>
@@ -1262,7 +1219,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="144">
           <caret line="10" column="59" selection-start-line="10" selection-start-column="59" selection-end-line="10" selection-end-column="59" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1270,7 +1226,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="144">
           <caret line="16" column="39" selection-start-line="16" selection-start-column="39" selection-end-line="16" selection-end-column="39" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1278,7 +1233,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="126">
           <caret line="12" column="41" selection-start-line="12" selection-start-column="41" selection-end-line="12" selection-end-column="41" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1287,7 +1241,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="234">
           <caret line="20" column="8" selection-start-line="20" selection-start-column="8" selection-end-line="20" selection-end-column="8" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -1310,27 +1263,43 @@
         <state relative-caret-position="684">
           <caret line="38" column="64" selection-start-line="38" selection-start-column="64" selection-end-line="38" selection-end-column="64" />
           <folding>
-            <element signature="e#40#76#0" expanded="true" />
+            <element signature="e#40#76#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/execution/exchange/ShareExchange.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1026">
+        <state relative-caret-position="882">
           <caret line="57" column="0" selection-start-line="57" selection-start-column="0" selection-end-line="57" selection-end-column="0" />
           <folding>
-            <element signature="e#49#74#0" expanded="true" />
+            <element signature="e#49#74#0" expanded="false" />
           </folding>
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/catalyst/optimizer/MjOptimizerSuite.scala" />
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala">
+    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/MjSession.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="450">
-          <caret line="26" column="43" selection-start-line="26" selection-start-column="43" selection-end-line="26" selection-end-column="43" />
-          <folding />
+        <state relative-caret-position="360">
+          <caret line="26" column="18" selection-start-line="26" selection-start-column="18" selection-end-line="26" selection-end-column="18" />
+          <folding>
+            <element signature="e#30#54#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/TestSQLContext.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="72">
+          <caret line="22" column="39" selection-start-line="22" selection-start-column="39" selection-end-line="22" selection-end-column="39" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/resources/log4j.properties">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="18">
+          <caret line="1" column="29" selection-start-line="1" selection-start-column="29" selection-end-line="1" selection-end-column="29" />
         </state>
       </provider>
     </entry>
@@ -1342,19 +1311,90 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/main/scala/org/apache/spark/sql/MjSession.scala">
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/ArgumentsSet.scala" />
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/SizeEstimatorSuite.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="360">
-          <caret line="26" column="18" selection-start-line="26" selection-start-column="18" selection-end-line="26" selection-end-column="18" />
+        <state relative-caret-position="162">
+          <caret line="10" column="33" selection-start-line="10" selection-start-column="33" selection-end-line="10" selection-end-column="33" />
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/TestSQLContext.scala">
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/OneRoundStrategySuite.scala">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="72">
-          <caret line="22" column="39" selection-start-line="22" selection-start-column="39" selection-end-line="22" selection-end-column="39" />
+        <state relative-caret-position="126">
+          <caret line="10" column="52" selection-start-line="10" selection-start-column="52" selection-end-line="10" selection-end-column="52" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SharedSQLContext.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="30" column="38" selection-start-line="30" selection-start-column="38" selection-end-line="30" selection-end-column="38" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestUtils.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="342">
+          <caret line="55" column="16" selection-start-line="55" selection-start-column="16" selection-end-line="55" selection-end-column="16" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/apache/spark/sql/test/SQLTestData.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="4788">
+          <caret line="694" column="5" selection-start-line="694" selection-start-column="5" selection-end-line="694" selection-end-column="5" />
+          <folding>
+            <element signature="e#837#877#0" expanded="true" />
+            <element signature="e#8768#11417#0" expanded="false" />
+            <element signature="e#11464#16291#0" expanded="false" />
+            <element signature="e#16336#19281#0" expanded="false" />
+            <element signature="e#19330#26357#0" expanded="false" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiRoundSuite.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="216">
+          <caret line="16" column="91" selection-start-line="16" selection-start-column="91" selection-end-line="16" selection-end-column="91" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/test/scala/org/pasalab/automj/MultiJoinSuite.scala">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="126">
+          <caret line="8" column="60" selection-start-line="8" selection-start-column="60" selection-end-line="8" selection-end-column="60" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/pom.xml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="114">
+          <caret line="312" column="25" selection-start-line="312" selection-start-column="25" selection-end-line="312" selection-end-column="25" />
+          <folding>
+            <element signature="n#plugin#0;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#1;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#2;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#3;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#4;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#5;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#6;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#7;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#8;n#plugins#0;n#pluginManagement#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#0;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#5;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#6;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#7;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#8;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+            <element signature="n#plugin#9;n#plugins#0;n#build#0;n#project#0;n#!!top" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>

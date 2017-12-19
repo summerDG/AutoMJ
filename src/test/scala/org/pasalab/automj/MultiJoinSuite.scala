@@ -6,7 +6,7 @@ import org.apache.spark.sql.test.SharedSQLContext
 /**
  * Created by wuxiaoqi on 17-12-13.
  */
-class MultiJoinSuite extends QueryTest with SharedSQLContext with ArgumentsSet {
+class MultiJoinSuite extends QueryTest with SharedSQLContext{
   //TODO: 改正sql String
   test("triangle data correctness test(one round)") {
     withSQLConf(MjConfigConst.Force_ONE_ROUND -> "true"){
