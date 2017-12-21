@@ -29,9 +29,7 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
       SessionState.newHadoopConf(session.sparkContext.hadoopConfiguration, conf),
       sqlParser,
       resourceLoader,
-      session.sqlContext,
-      session.read,
-      session.sparkContext.conf.getOption(MjConfigConst.METADATA_LOCATION)
+      session.sqlContext
     )
     parentState.foreach(_.catalog.copyStateTo(catalog))
     catalog

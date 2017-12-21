@@ -325,7 +325,10 @@ private[sql] trait SQLTestData { self =>
 
     spark.sessionState.catalog match {
       case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+        info
+          .foreach(i =>
+            catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
+          i.sample, i.p, overrideIfExists = true, isGlobal = true))
     }
 
     Arguments(attributes, keys, joinConditions, relations, info)
@@ -434,7 +437,8 @@ private[sql] trait SQLTestData { self =>
 
     spark.sessionState.catalog match {
       case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
+          i.sample, i.p, overrideIfExists = true, isGlobal = true))
     }
 
     Arguments(attributes, keys, joinConditions, relations, info)
@@ -509,7 +513,8 @@ private[sql] trait SQLTestData { self =>
     )
     spark.sessionState.catalog match {
       case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
+          i.sample, i.p, overrideIfExists = true, isGlobal = true))
     }
 
     Arguments(attributes, keys, joinConditions, relations, info)
@@ -670,7 +675,8 @@ private[sql] trait SQLTestData { self =>
 
     spark.sessionState.catalog match {
       case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.registerTable(i.name, i.size, i.count, i.cardinality, i.sample, i.p))
+        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
+          i.sample, i.p, overrideIfExists = true, isGlobal = true))
     }
     Arguments(attributes, keys, joinConditions, relations, info)
   }

@@ -23,11 +23,11 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
                        hadoopConf: Configuration,
                        parser: ParserInterface,
                        functionResourceLoader: FunctionResourceLoader,
-                       sqlContext: SQLContext,
-                       reader: DataFrameReader,
-                       location: Option[String] = None)
+                       sqlContext: SQLContext)
   extends SessionCatalog (externalCatalog,
     globalTempViewManager, functionRegistry, conf, hadoopConf, parser, functionResourceLoader){
+
+  val globalViewName: mutable.HashMap[LogicalPlan, String] = new mutable.HashMap[LogicalPlan, String]()
 
   override def createTempView(name: String,
                               tableDefinition: LogicalPlan,
@@ -39,99 +39,28 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
     tempTables.put(table, tableDefinition)
   }
 
-  private val globalTableInfo: mutable.HashMap[String, TableInfo] = {
-    if (location.isDefined) {
-      val fileSystem: FileSystem = FileSystem.get(hadoopConf)
-      val tableDirs = fileSystem.listFiles(new Path(location.get), false)
-      val map: mutable.HashMap[String, TableInfo] = mutable.HashMap[String, TableInfo]()
-      while (tableDirs.hasNext) {
-        val tableDir = tableDirs.next()
-        val subFiles = fileSystem.listFiles(tableDir.getPath, false)
-        val tableName: String = tableDir.getPath.getName
-        var size: Long = 0
-        var count: Long = 0
-        val cardinality: mutable.Map[String, Long] = mutable.Map[String, Long]()
-        var sample: DataFrame = null
-        var p: Double = 1.0
-        while (subFiles.hasNext) {
-          val file = subFiles.next()
-          file.getPath.getName match {
-            case f if f.startsWith("size") =>
-              size = f.substring(5).toLong
-            case f if f.startsWith("count") =>
-              count = f.substring(6).toLong
-            case f if f.startsWith("sample") =>
-              sample = reader.json(file.getPath.toString)
-              p = f.substring(7).toDouble
-            case f =>
-              val t = f.split("-")
-              val field = t(0)
-              val card = t(1).toLong
-              cardinality += field -> card
-          }
-        }
-        map += tableName -> TableInfo(tableName, size, count, cardinality.toMap, sample, p)
-      }
-      map
-    } else mutable.HashMap[String, TableInfo]()
-  }
+  val globalTableInfo: mutable.HashMap[String, TableInfo] = new mutable.HashMap[String, TableInfo]()
 
   val tempTableInfo: mutable.HashMap[String, TableInfo] = new mutable.HashMap[String, TableInfo]()
 
-  val addedTables: mutable.ArrayBuffer[String] = mutable.ArrayBuffer[String]()
-
-  def getInfo(tableName: String): Option[TableInfo] = globalTableInfo.get(tableName)
-  def registerTable(tableName: String, info: TableInfo): Unit = {
-    globalTableInfo += tableName -> info
-    addedTables += tableName
+  def getInfo(table: String): Option[TableInfo] = {
+    if (tempTableInfo.contains(table)) tempTableInfo.get(table)
+    else globalTableInfo.get(table)
   }
 
-  def registerTable(tableName: String,
-                    size: Long,
-                    count: Long,
-                    cardinality: Map[String, Long],
-                    sample: DataFrame, p: Double): Unit = {
-    val name = formatTableName(tableName)
-    registerTable(name, TableInfo(name, size, count, cardinality, sample, p))
-  }
-
-  def registerTable(tableName: String, dataFrame: DataFrame, fraction: Double): Unit ={
-
-    val statistics = new Statistics(dataFrame, sqlContext, fraction)
-    registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample, fraction)
-  }
 
   def getInfo(plan: LogicalPlan): Option[TableInfo] = {
-    plan match {
-      case SubqueryAlias(table, viewDef) =>
-        if (tempTableInfo.contains(table)) tempTableInfo.get(table)
-        else globalTableInfo.get(table)
-    }
+    //TODO: 能否用equals?
+    val tempView = tempTables.filter(_._2.equals(plan))
+    if (tempView.isEmpty) {
+      val name = globalViewName.get(plan)
+      if (name.isDefined) getInfo(name.get)
+      else None
+    } else getInfo(tempView.head._1)
   }
 
-  def persistMetaData: Unit ={
-    if (location.isDefined) {
-      val l = location.get
-      val fileSystem: FileSystem = FileSystem.get(hadoopConf)
-      for (tableName <- addedTables; if globalTableInfo.contains(tableName)) {
-        val info = globalTableInfo.get(tableName).get
-        //生成size文件
-        val size = fileSystem.create(new Path(l+"/size-"+info.size))
-        size.close()
-        //生成count文件
-        val count = fileSystem.create(new Path(l+"/count-"+info.count))
-        count.close()
-        //为每个field生成对应的cardinality文件
-        for ((f, c)<- info.cardinality) {
-          val field = fileSystem.create(new Path(l+"/"+f+"-"+c))
-          field.close()
-        }
-        info.sample.write.json(l + "/sample")
-      }
-      globalTableInfo.clear()
-    }
-    addedTables.clear()
-  }
+  //TODO: 在增加了ExternalCatalog之后进行
+  def persistMetaData: Unit = {}
 
   override def createGlobalTempView(
                                      name: String,
@@ -140,24 +69,73 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
     super.createGlobalTempView(name, viewDefinition, overrideIfExists)
 
     val viewName = formatTableName(name)
+
+    globalViewName.put(getGlobalTempView(viewName).get, viewName)
     val df = Dataset(sqlContext.sparkSession, viewDefinition).toDF()
-    registerTable(viewName, df, 1.0)
+    createTempViewInfo(viewName, df, 1.0, overrideIfExists, isGlobal = true)
   }
 
   override def alterTempViewDefinition(name: TableIdentifier, viewDefinition: LogicalPlan): Boolean = {
-    val r = super.alterTempViewDefinition(name, viewDefinition)
+    val hasView = super.alterTempViewDefinition(name, viewDefinition)
 
-    val viewName = formatTableName(name.table)
-    if (tempTableInfo.contains(viewName)) {
+    if (hasView) {
+      val viewName = formatTableName(name.table)
+      if (name.database.isEmpty) {
+        if (tempTableInfo.contains(viewName)) {
+          val df = Dataset(sqlContext.sparkSession, viewDefinition).toDF()
+          createTempViewInfo(viewName, df, 1.0, true, false)
+          true
+        } else false
+      } else if (formatDatabaseName(name.database.get) == globalTempViewManager.database) {
+        val df = Dataset(sqlContext.sparkSession, viewDefinition).toDF()
+        createTempViewInfo(viewName, df, 1.0, true, true)
+        true
+      } else {
+        false
+      }
+    } else false
+  }
 
+  def createTempViewInfo(table: String,
+                         info: TableInfo,
+                         overrideIfExists: Boolean,
+                         isGlobal: Boolean): Unit = synchronized {
+    if (isGlobal) {
+      if (globalTableInfo.contains(table) && !overrideIfExists) {
+        throw new TempTableAlreadyExistsException(table)
+      }
+      globalTableInfo.put(table, info)
+    } else {
+      if (tempTableInfo.contains(table) && !overrideIfExists) {
+        throw new TempTableAlreadyExistsException(table)
+      }
+      tempTableInfo.put(table, info)
     }
   }
 
-  def createTempViewInfo(name: String, info: TableInfo, overrideIfExists: Boolean): Unit = synchronized {
-    val table = formatTableName(name)
-    if (tempTableInfo.contains(table) && !overrideIfExists) {
-      throw new TempTableAlreadyExistsException(name)
-    }
-    tempTableInfo.put(table, info)
+  def createTempViewInfo(name: String,
+                         size: Long,
+                         count: Long,
+                         cardinality: Map[String, Long],
+                         sample: DataFrame,
+                         p: Double,
+                         overrideIfExists: Boolean,
+                         isGlobal: Boolean): Unit ={
+    val viewName = formatTableName(name)
+    createTempViewInfo(viewName,
+      TableInfo(viewName, size, count, cardinality, sample, p),
+      overrideIfExists, isGlobal)
+  }
+
+  def createTempViewInfo(
+                          name: String,
+                          dataFrame: DataFrame,
+                          fraction: Double,
+                          overrideIfExists: Boolean,
+                          isGlobal: Boolean): Unit = {
+    val statistics = new Statistics(dataFrame, sqlContext, fraction)
+    createTempViewInfo(name, statistics.getSize, statistics.getCount,
+      statistics.getCardinality, statistics.getSample, fraction,
+      overrideIfExists, isGlobal)
   }
 }
