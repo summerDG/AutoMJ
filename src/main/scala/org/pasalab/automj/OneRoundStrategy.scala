@@ -40,6 +40,9 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrd
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
     }.toSeq
     val equivalenceClasses = Graph(initEdges).connectComponent()
+    assert(equivalenceClasses.forall(_.nonEmpty),
+      s"equivalenceClasses(${equivalenceClasses.length})," +
+        s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
 
     val statistics: Seq[TableInfo] = relations.flatMap(r => catalog.getInfo(r))
 
@@ -56,6 +59,9 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrd
 
     dimensionToExprs =
       attrOptimization(equivalenceClasses.length, relations, statistics, exprToCid)
+    assert(dimensionToExprs.forall(_.nonEmpty),
+      s"dimensionToExprs(${dimensionToExprs.length})," +
+        s" ${if (dimensionToExprs.forall(_.isEmpty)) "is all empty" else "has some empty"})")
 
     val buffer = new Array[ArrayBuffer[Expression]](relations.length)
       .map(x => ArrayBuffer[Expression]())

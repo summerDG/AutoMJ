@@ -1,6 +1,7 @@
 package org.apache.spark.sql.automj
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.catalyst.catalog.ExternalCatalog
 import org.apache.spark.sql.catalyst.optimizer.{MjOptimizer, Optimizer}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -16,9 +17,12 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
   extends BaseSessionStateBuilder(session, parentState) {
   override protected def newBuilder: NewBuilder = new MjSessionStateBuilder(_, _)
 
+  private def externalCatalog: ExternalCatalog =
+    session.sharedState.externalCatalog
+
   override protected lazy val catalog: MjSessionCatalog = {
     val catalog = new MjSessionCatalog(
-      session.sharedState.externalCatalog,
+      externalCatalog,
       session.sharedState.globalTempViewManager,
       functionRegistry,
       conf,

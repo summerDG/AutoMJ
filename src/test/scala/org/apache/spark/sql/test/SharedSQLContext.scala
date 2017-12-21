@@ -17,13 +17,13 @@
 
 package org.apache.spark.sql.test
 
-import scala.concurrent.duration._
+import org.apache.spark.sql.automj.MjSessionCatalog
 
+import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
-
 import org.apache.spark.{DebugFilesystem, SparkConf}
-import org.apache.spark.sql.{SparkSession, SQLContext}
+import org.apache.spark.sql.{SQLContext, SparkSession}
 
 /**
  * Helper trait for SQL test suites where all tests share a single [[TestSparkSession]].
@@ -46,6 +46,8 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
    * The [[TestSparkSession]] to use for all tests in this suite.
    */
   protected implicit def spark: SparkSession = _spark
+
+  protected implicit def catalog: MjSessionCatalog = _spark.sessionState.catalog.asInstanceOf[MjSessionCatalog]
 
   /**
    * The [[TestSQLContext]] to use for all tests in this suite.

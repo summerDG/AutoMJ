@@ -3,13 +3,13 @@ package org.apache.spark.sql.automj
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.{FileSystem, Path}
 import org.apache.spark.sql._
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, TempTableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.{ExternalCatalog, FunctionResourceLoader, GlobalTempViewManager, SessionCatalog}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, SubqueryAlias}
-import org.apache.spark.sql.execution.command.CreateViewCommand
+import org.apache.spark.sql.catalyst.plans.logical.{Statistics => _, _}
 import org.apache.spark.sql.internal.SQLConf
-import org.pasalab.automj.{MjConfigConst, TableInfo}
+import org.pasalab.automj.TableInfo
 
 import scala.collection.mutable
 
@@ -28,7 +28,6 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
                        location: Option[String] = None)
   extends SessionCatalog (externalCatalog,
     globalTempViewManager, functionRegistry, conf, hadoopConf, parser, functionResourceLoader){
-  protected val tempTableNames = new mutable.HashMap[LogicalPlan, String]()
 
   override def createTempView(name: String,
                               tableDefinition: LogicalPlan,
@@ -38,12 +37,9 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
       throw new TempTableAlreadyExistsException(name)
     }
     tempTables.put(table, tableDefinition)
-    tempTableNames.put(tableDefinition, table)
   }
 
-
-
-  private val tables: mutable.HashMap[String, TableInfo] = {
+  private val globalTableInfo: mutable.HashMap[String, TableInfo] = {
     if (location.isDefined) {
       val fileSystem: FileSystem = FileSystem.get(hadoopConf)
       val tableDirs = fileSystem.listFiles(new Path(location.get), false)
@@ -79,11 +75,14 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
       map
     } else mutable.HashMap[String, TableInfo]()
   }
+
+  val tempTableInfo: mutable.HashMap[String, TableInfo] = new mutable.HashMap[String, TableInfo]()
+
   val addedTables: mutable.ArrayBuffer[String] = mutable.ArrayBuffer[String]()
 
-  def getInfo(tableName: String): Option[TableInfo] = tables.get(tableName)
+  def getInfo(tableName: String): Option[TableInfo] = globalTableInfo.get(tableName)
   def registerTable(tableName: String, info: TableInfo): Unit = {
-    tables += tableName -> info
+    globalTableInfo += tableName -> info
     addedTables += tableName
   }
 
@@ -96,19 +95,26 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
     registerTable(name, TableInfo(name, size, count, cardinality, sample, p))
   }
 
-  def registerTable(tableName: String, dataFrame: DataFrame, p: Double, fraction: Double): Unit ={
+  def registerTable(tableName: String, dataFrame: DataFrame, fraction: Double): Unit ={
+
     val statistics = new Statistics(dataFrame, sqlContext, fraction)
-    registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample, p)
+    registerTable(tableName, statistics.getSize, statistics.getCount, statistics.getCardinality, statistics.getSample, fraction)
   }
 
-  def getInfo(plan: LogicalPlan): Option[TableInfo] = tempTableNames.get(plan).map(s => getInfo(s).get)
+  def getInfo(plan: LogicalPlan): Option[TableInfo] = {
+    plan match {
+      case SubqueryAlias(table, viewDef) =>
+        if (tempTableInfo.contains(table)) tempTableInfo.get(table)
+        else globalTableInfo.get(table)
+    }
+  }
 
   def persistMetaData: Unit ={
     if (location.isDefined) {
       val l = location.get
       val fileSystem: FileSystem = FileSystem.get(hadoopConf)
-      for (tableName <- addedTables; if tables.contains(tableName)) {
-        val info = tables.get(tableName).get
+      for (tableName <- addedTables; if globalTableInfo.contains(tableName)) {
+        val info = globalTableInfo.get(tableName).get
         //生成size文件
         val size = fileSystem.create(new Path(l+"/size-"+info.size))
         size.close()
@@ -122,8 +128,36 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
         }
         info.sample.write.json(l + "/sample")
       }
-      tables.clear()
+      globalTableInfo.clear()
     }
     addedTables.clear()
+  }
+
+  override def createGlobalTempView(
+                                     name: String,
+                                     viewDefinition: LogicalPlan,
+                                     overrideIfExists: Boolean): Unit = {
+    super.createGlobalTempView(name, viewDefinition, overrideIfExists)
+
+    val viewName = formatTableName(name)
+    val df = Dataset(sqlContext.sparkSession, viewDefinition).toDF()
+    registerTable(viewName, df, 1.0)
+  }
+
+  override def alterTempViewDefinition(name: TableIdentifier, viewDefinition: LogicalPlan): Boolean = {
+    val r = super.alterTempViewDefinition(name, viewDefinition)
+
+    val viewName = formatTableName(name.table)
+    if (tempTableInfo.contains(viewName)) {
+
+    }
+  }
+
+  def createTempViewInfo(name: String, info: TableInfo, overrideIfExists: Boolean): Unit = synchronized {
+    val table = formatTableName(name)
+    if (tempTableInfo.contains(table) && !overrideIfExists) {
+      throw new TempTableAlreadyExistsException(name)
+    }
+    tempTableInfo.put(table, info)
   }
 }

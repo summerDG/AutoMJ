@@ -22,11 +22,11 @@ class MultiJoinSuite extends QueryTest with SharedSQLContext{
       expectedClique())
   }
   test("line data correctness test") {
-    checkAnswer(sql("SELECT * FROM a, b, c, d where a.x = b.x AND b.y = c.y AND c.z = d.z"), expectedLine())
+    checkAnswer(sql("SELECT * FROM al, b, c, dl where al.x = b.x AND b.y = c.y AND c.z = dl.z"), expectedLine())
   }
   test("arbitrary data correctness test") {
-    checkAnswer(sql("SELECT * FROM a, b, c , d, e, f, g, h, i, j " +
-      "where a.x = b.x AND b.y = c.y AND c.z = a.z AND a.z = d.z AND d.p = e.p AND e.q = f.q AND f.s = g.s " +
+    checkAnswer(sql("SELECT * FROM a, b, c , da, ea, fa, g, h, i, j " +
+      "where a.x = b.x AND b.y = c.y AND c.z = a.z AND a.z = da.z AND da.p = ea.p AND ea.q = fa.q AND fa.s = g.s " +
       "AND b.y = h.y AND h.r = i.r AND i.w = j.w"), expectedArbitrary())
   }
 }

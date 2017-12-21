@@ -7,6 +7,7 @@ import org.apache.spark.annotation.InterfaceStability
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionStateBuilder
 import org.apache.spark.sql.internal.{SessionState, SharedState}
+import org.pasalab.automj.MjConfigConst
 
 /**
  * Created by wuxiaoqi on 17-12-14.
@@ -35,7 +36,13 @@ class MjSession private(
   @InterfaceStability.Unstable
   @transient
   override lazy val sharedState: SharedState = {
-    existingSharedState.getOrElse(new SharedState(sparkContext))
+    existingSharedState.getOrElse {
+//      if (sparkContext.getConf.getBoolean(MjConfigConst.ENABLE_STATISTICS, false))
+//        new MjSharedState(sparkContext)
+//      else
+//        new SharedState(sparkContext)
+      new SharedState(sparkContext)
+    }
   }
   override def newSession(): SparkSession = {
     new MjSession(sparkContext, Some(sharedState), parentSessionState = None, extensions)
