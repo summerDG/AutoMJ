@@ -1,2 +1,0 @@
-10:16:56.526 main INFO SparkContext: Running Spark version 2.2.0
-10:16:56.855 main WARN NativeCodeLoader: Unable to load native-hadoop library for your platform... using builtin-java classes where applicable
