@@ -11,7 +11,7 @@ class SizeEstimatorSuite extends SharedSQLContext{
     val dataSource = triangleData
     val expectedSize = 12
     val estimator: JoinSizeEstimator =
-      EstimatorBasedSample(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog], spark.sparkContext.getConf)
+      EstimatorBasedSample(sqlConf)
     estimator.refresh(dataSource.joinConditions, dataSource.relations)
 
     val cost: Long = estimator.cost()

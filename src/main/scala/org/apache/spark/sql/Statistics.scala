@@ -12,11 +12,11 @@ import scala.util.Random
 /**
  * Created by wuxiaoqi on 17-11-28.
  */
-class Statistics(dataFrame: DataFrame,
+case class Statistics(dataFrame: DataFrame,
                  sqlContext: SQLContext,
                  fraction: Double,
                  @transient private val seed: Long = new Random().nextLong,
-                 relativeSD: Double = 0.05) {
+                 relativeSD: Double = 0.05) extends Product{
   val schema = dataFrame.schema
   val rdd = dataFrame.rdd
   val sampler: RandomSampler[Row, Row] = new BernoulliSampler[Row](fraction)

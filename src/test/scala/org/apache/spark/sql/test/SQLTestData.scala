@@ -267,33 +267,175 @@ private[sql] trait SQLTestData { self =>
     df
   }
 
-  protected lazy val triangleData: Arguments = {
-    val aDF = spark.sparkContext.parallelize(
+
+  //用于Multi Join测试的数据集
+  protected lazy val aDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
       XzData(1, 1) ::
         XzData(1, 2) ::
         XzData(2, 1) ::
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    aDF.createOrReplaceTempView("a")
-
-    val bDF = spark.sparkContext.parallelize(
+    df.createGlobalTempView("a")
+    df
+  }
+  protected lazy val alDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      XData(1) ::
+        XData(2) ::
+        XData(3) ::
+        XData(4) ::
+        XData(5) ::
+        XData(6) :: Nil, 2).toDF()
+    df.createGlobalTempView("al")
+    df
+  }
+  protected lazy val bDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
       XyData(1, 1) ::
         XyData(1, 2) ::
         XyData(2, 1) ::
         XyData(2, 2) ::
         XyData(3, 1) ::
         XyData(3, 2) :: Nil, 2).toDF()
-    bDF.createOrReplaceTempView("b")
-
-    val cDF = spark.sparkContext.parallelize(
+    df.createGlobalTempView("b")
+    df
+  }
+  protected lazy val cDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
       YzData(1, 1) ::
         YzData(1, 2) ::
         YzData(2, 1) ::
         YzData(2, 2) ::
         YzData(3, 1) ::
         YzData(3, 2) :: Nil, 2).toDF()
-    cDF.createOrReplaceTempView("c")
+    df.createGlobalTempView("c")
+    df
+  }
+  protected lazy val dDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      SzData(1, 1) ::
+        SzData(1, 2) ::
+        SzData(2, 1) ::
+        SzData(2, 2) ::
+        SzData(3, 1) ::
+        SzData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("d")
+    df
+  }
+  protected lazy val dlDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      ZData(1) ::
+        ZData(2) ::
+        ZData(3) ::
+        ZData(4) ::
+        ZData(5) ::
+        ZData(6) :: Nil, 2).toDF()
+    df.createGlobalTempView("dl")
+    df
+  }
+  protected lazy val daDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      ZpData(1, 1) ::
+        ZpData(1, 2) ::
+        ZpData(2, 1) ::
+        ZpData(2, 2) ::
+        ZpData(3, 1) ::
+        ZpData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("da")
+    df
+  }
+  protected lazy val eDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      SxData(1, 1) ::
+        SxData(1, 2) ::
+        SxData(2, 1) ::
+        SxData(2, 2) ::
+        SxData(3, 1) ::
+        SxData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("e")
+    df
+  }
+  protected lazy val eaDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      PqData(1, 1) ::
+        PqData(1, 2) ::
+        PqData(2, 1) ::
+        PqData(2, 2) ::
+        PqData(3, 1) ::
+        PqData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("ea")
+    df
+  }
+  protected lazy val fDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      SyData(1, 1) ::
+        SyData(1, 2) ::
+        SyData(2, 1) ::
+        SyData(2, 2) ::
+        SyData(3, 1) ::
+        SyData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("f")
+    df
+  }
+  protected lazy val faDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      QsData(1, 1) ::
+        QsData(1, 2) ::
+        QsData(2, 1) ::
+        QsData(2, 2) ::
+        QsData(3, 1) ::
+        QsData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("fa")
+    df
+  }
+  protected lazy val gDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("g")
+    df
+  }
+  protected lazy val hDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("h")
+    df
+  }
+  protected lazy val iDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("i")
+    df
+  }
+  protected lazy val jDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      XzData(1, 1) ::
+        XzData(1, 2) ::
+        XzData(2, 1) ::
+        XzData(2, 2) ::
+        XzData(3, 1) ::
+        XzData(3, 2) :: Nil, 2).toDF()
+    df.createGlobalTempView("j")
+    df
+  }
+
+  protected lazy val triangleData: Arguments = {
 
     val relations: Seq[LogicalPlan] = Seq[LogicalPlan](
       aDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan)
@@ -322,14 +464,6 @@ private[sql] trait SQLTestData { self =>
       TableInfo("b", 10, 10, Map[String, Long]("x"->6, "y"->7), bDF, 1),
       TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1)
     )
-
-    spark.sessionState.catalog match {
-      case catalog: MjSessionCatalog =>
-        info
-          .foreach(i =>
-            catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
-          i.sample, i.p, overrideIfExists = true, isGlobal = true))
-    }
 
     Arguments(attributes, keys, joinConditions, relations, info)
   }
@@ -369,60 +503,6 @@ private[sql] trait SQLTestData { self =>
       Seq[Expression](attributes("f.s"), attributes("f.y"))
     )
 
-    val aDF = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
-    aDF.createOrReplaceTempView("a")
-
-    val bDF = spark.sparkContext.parallelize(
-      XyData(1, 1) ::
-        XyData(1, 2) ::
-        XyData(2, 1) ::
-        XyData(2, 2) ::
-        XyData(3, 1) ::
-        XyData(3, 2) :: Nil, 2).toDF()
-    bDF.createOrReplaceTempView("b")
-
-    val cDF = spark.sparkContext.parallelize(
-      YzData(1, 1) ::
-        YzData(1, 2) ::
-        YzData(2, 1) ::
-        YzData(2, 2) ::
-        YzData(3, 1) ::
-        YzData(3, 2) :: Nil, 2).toDF()
-    cDF.createOrReplaceTempView("c")
-
-    val dDF = spark.sparkContext.parallelize(
-      SzData(1, 1) ::
-        SzData(1, 2) ::
-        SzData(2, 1) ::
-        SzData(2, 2) ::
-        SzData(3, 1) ::
-        SzData(3, 2) :: Nil, 2).toDF()
-    dDF.createOrReplaceTempView("d")
-
-    val eDF = spark.sparkContext.parallelize(
-      SxData(1, 1) ::
-        SxData(1, 2) ::
-        SxData(2, 1) ::
-        SxData(2, 2) ::
-        SxData(3, 1) ::
-        SxData(3, 2) :: Nil, 2).toDF()
-    eDF.createOrReplaceTempView("e")
-
-    val fDF = spark.sparkContext.parallelize(
-      SyData(1, 1) ::
-        SyData(1, 2) ::
-        SyData(2, 1) ::
-        SyData(2, 2) ::
-        SyData(3, 1) ::
-        SyData(3, 2) :: Nil, 2).toDF()
-    fDF.createOrReplaceTempView("f")
-
     val relations: Seq[LogicalPlan] = Seq[LogicalPlan](
       aDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan, dDF.logicalPlan, eDF.logicalPlan, fDF.logicalPlan)
 
@@ -435,54 +515,12 @@ private[sql] trait SQLTestData { self =>
       TableInfo("f", 10, 10, Map[String, Long]("s"->13, "y"->10), fDF, 1)
     )
 
-    spark.sessionState.catalog match {
-      case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
-          i.sample, i.p, overrideIfExists = true, isGlobal = true))
-    }
-
     Arguments(attributes, keys, joinConditions, relations, info)
   }
 
   protected lazy val lineData: Arguments = {
-    val aDF = spark.sparkContext.parallelize(
-      XData(1) ::
-        XData(2) ::
-        XData(3) ::
-        XData(4) ::
-        XData(5) ::
-        XData(6) :: Nil, 2).toDF()
-    aDF.createOrReplaceTempView("al")
-
-    val bDF = spark.sparkContext.parallelize(
-      XyData(1, 1) ::
-        XyData(1, 2) ::
-        XyData(2, 1) ::
-        XyData(2, 2) ::
-        XyData(3, 1) ::
-        XyData(3, 2) :: Nil, 2).toDF()
-    bDF.createOrReplaceTempView("b")
-
-    val cDF = spark.sparkContext.parallelize(
-      YzData(1, 1) ::
-        YzData(1, 2) ::
-        YzData(2, 1) ::
-        YzData(2, 2) ::
-        YzData(3, 1) ::
-        YzData(3, 2) :: Nil, 2).toDF()
-    cDF.createOrReplaceTempView("c")
-
-    val dDF = spark.sparkContext.parallelize(
-      ZData(1) ::
-        ZData(2) ::
-        ZData(3) ::
-        ZData(4) ::
-        ZData(5) ::
-        ZData(6) :: Nil, 2).toDF()
-    dDF.createOrReplaceTempView("dl")
-
     val relations: Seq[LogicalPlan] = Seq[LogicalPlan](
-      aDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan, dDF.logicalPlan)
+      alDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan, dlDF.logicalPlan)
 
     val attributes: Map[String, Attribute] = Map[String, Attribute] (
       "al.x"->relations(0).output(0),
@@ -511,14 +549,9 @@ private[sql] trait SQLTestData { self =>
       TableInfo("c", 10, 10, Map[String, Long]("y"->8, "z"->10), cDF, 1),
       TableInfo("dl", 10, 10, Map[String, Long]("z"->9), dDF, 1)
     )
-    spark.sessionState.catalog match {
-      case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
-          i.sample, i.p, overrideIfExists = true, isGlobal = true))
-    }
-
     Arguments(attributes, keys, joinConditions, relations, info)
   }
+
   protected lazy val arbitraryData: Arguments = {
     val attributes: Map[String, AttributeReference] = Map[String, AttributeReference] (
       "a.x"->AttributeReference("x", IntegerType)(exprId = ExprId(1)),
@@ -566,99 +599,9 @@ private[sql] trait SQLTestData { self =>
       Seq[Expression](attributes("j.w"))
     )
 
-    val aDF = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
-    aDF.createOrReplaceTempView("a")
-
-    val bDF = spark.sparkContext.parallelize(
-      XyData(1, 1) ::
-        XyData(1, 2) ::
-        XyData(2, 1) ::
-        XyData(2, 2) ::
-        XyData(3, 1) ::
-        XyData(3, 2) :: Nil, 2).toDF()
-    bDF.createOrReplaceTempView("b")
-
-    val cDF = spark.sparkContext.parallelize(
-      YzData(1, 1) ::
-        YzData(1, 2) ::
-        YzData(2, 1) ::
-        YzData(2, 2) ::
-        YzData(3, 1) ::
-        YzData(3, 2) :: Nil, 2).toDF()
-    cDF.createOrReplaceTempView("c")
-
-    val dDF = spark.sparkContext.parallelize(
-      ZpData(1, 1) ::
-        ZpData(1, 2) ::
-        ZpData(2, 1) ::
-        ZpData(2, 2) ::
-        ZpData(3, 1) ::
-        ZpData(3, 2) :: Nil, 2).toDF()
-    dDF.createOrReplaceTempView("da")
-
-    val eDF = spark.sparkContext.parallelize(
-      PqData(1, 1) ::
-        PqData(1, 2) ::
-        PqData(2, 1) ::
-        PqData(2, 2) ::
-        PqData(3, 1) ::
-        PqData(3, 2) :: Nil, 2).toDF()
-    eDF.createOrReplaceTempView("ea")
-
-    val fDF = spark.sparkContext.parallelize(
-      QsData(1, 1) ::
-        QsData(1, 2) ::
-        QsData(2, 1) ::
-        QsData(2, 2) ::
-        QsData(3, 1) ::
-        QsData(3, 2) :: Nil, 2).toDF()
-    fDF.createOrReplaceTempView("fa")
-
-    val gDF = spark.sparkContext.parallelize(
-      SData(1) ::
-        SData(2) ::
-        SData(3) ::
-        SData(4) ::
-        SData(5) ::
-        SData(6) :: Nil, 2).toDF()
-    gDF.createOrReplaceTempView("g")
-
-    val hDF = spark.sparkContext.parallelize(
-      YrData(1, 1) ::
-        YrData(1, 2) ::
-        YrData(2, 1) ::
-        YrData(2, 2) ::
-        YrData(3, 1) ::
-        YrData(3, 2) :: Nil, 2).toDF()
-    hDF.createOrReplaceTempView("h")
-
-    val iDF = spark.sparkContext.parallelize(
-      RwData(1, 1) ::
-        RwData(1, 2) ::
-        RwData(2, 1) ::
-        RwData(2, 2) ::
-        RwData(3, 1) ::
-        RwData(3, 2) :: Nil, 2).toDF()
-    iDF.createOrReplaceTempView("i")
-
-    val jDF = spark.sparkContext.parallelize(
-      WData(1) ::
-        WData(2) ::
-        WData(3) ::
-        WData(4) ::
-        WData(5) ::
-        WData(6) :: Nil, 2).toDF()
-    jDF.createOrReplaceTempView("j")
-
     val relations: Seq[LogicalPlan] = Seq[LogicalPlan](
-      aDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan, dDF.logicalPlan, eDF.logicalPlan,
-      fDF.logicalPlan, gDF.logicalPlan, hDF.logicalPlan, iDF.logicalPlan, jDF.logicalPlan)
+      aDF.logicalPlan, bDF.logicalPlan, cDF.logicalPlan, daDF.logicalPlan, eaDF.logicalPlan,
+      faDF.logicalPlan, gDF.logicalPlan, hDF.logicalPlan, iDF.logicalPlan, jDF.logicalPlan)
 
     val info: Seq[TableInfo] = Seq[TableInfo](
       TableInfo("a", 10, 10, Map[String, Long]("x"->5, "z"->9), aDF, 1),
@@ -673,13 +616,9 @@ private[sql] trait SQLTestData { self =>
       TableInfo("j", 10, 10, Map[String, Long]("w"->8), jDF, 1)
     )
 
-    spark.sessionState.catalog match {
-      case catalog: MjSessionCatalog =>
-        info.foreach(i => catalog.createTempViewInfo(i.name, i.size, i.count, i.cardinality,
-          i.sample, i.p, overrideIfExists = true, isGlobal = true))
-    }
     Arguments(attributes, keys, joinConditions, relations, info)
   }
+
   def readFrom(fileName: String): Seq[Row] = {
     val classLoader = getClass().getClassLoader
     val rawData = IOUtils.lineIterator(classLoader.getResourceAsStream(fileName), "UTF-8")
@@ -725,6 +664,22 @@ private[sql] trait SQLTestData { self =>
     salary
     complexData
     courseSales
+
+    aDF
+    alDF
+    bDF
+    cDF
+    dDF
+    dlDF
+    daDF
+    eDF
+    eaDF
+    fDF
+    faDF
+    gDF
+    hDF
+    iDF
+    jDF
 
     triangleData
     cliqueData

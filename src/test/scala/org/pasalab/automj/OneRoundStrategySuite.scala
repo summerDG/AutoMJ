@@ -12,7 +12,7 @@ class OneRoundStrategySuite extends SharedSQLContext{
   test("test refresh method") {
     val dataSource = triangleData
 
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val closures = oneRoundStrategy.getClosures()
     val shares = oneRoundStrategy.getShares
@@ -46,7 +46,7 @@ class OneRoundStrategySuite extends SharedSQLContext{
   }
   test("test cost model") {
     val dataSource = triangleData
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(spark.sessionState.catalog.asInstanceOf[MjSessionCatalog])
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val cost: Long = oneRoundStrategy.cost()
     assert(cost == 60, s"Communication Cost is not correct, $cost != 60")

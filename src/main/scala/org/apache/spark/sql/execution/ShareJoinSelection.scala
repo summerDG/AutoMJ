@@ -12,7 +12,7 @@ import org.pasalab.automj._
 /**
  * Created by wuxiaoqi on 17-12-4.
  */
-case class ShareJoinSelection(meta: MjSessionCatalog, conf: SQLConf) extends Strategy
+case class ShareJoinSelection(conf: SQLConf) extends Strategy
   with PredicateHelper{
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition,

@@ -1,11 +1,13 @@
 package org.pasalab.automj
 
+import org.apache.spark.MjStatistics
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.KeysAndTableId
 import org.apache.spark.sql.execution.joins.ExpressionAndAttributes
+import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
@@ -13,7 +15,7 @@ import scala.util.Random
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrder with Logging{
+abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logging{
   protected var reorderedKeysEachTable: Seq[Seq[Expression]] = null
   protected var bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -44,7 +46,7 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrd
       s"equivalenceClasses(${equivalenceClasses.length})," +
         s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
 
-    val statistics: Seq[TableInfo] = relations.flatMap(r => catalog.getInfo(r))
+    val statistics: Seq[MjStatistics[Any]] = relations.map(_.stats(conf).asInstanceOf[MjStatistics[Any]])
 
     val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
       case (nodes, cId) =>
@@ -78,7 +80,7 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog) extends AttributesOrd
               keysAndId.tableId)
         }
     }
-    val predictedSizes: Seq[Long] = statistics.map(_.count)
+    val predictedSizes: Seq[Long] = statistics.map(_.rowCount.get.toLong)
     val (s, n) = computeSharesAndPartitions(relations.length, closures, predictedSizes, partitionNum)
     shares = s
     numShufflePartitions = n

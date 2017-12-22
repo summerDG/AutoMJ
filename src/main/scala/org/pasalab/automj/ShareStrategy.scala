@@ -1,36 +1,38 @@
 package org.pasalab.automj
+import org.apache.spark.MjStatistics
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
 import org.apache.spark.sql.execution.KeysAndTableId
+import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable
 
 /**
  * Created by wuxiaoqi on 17-12-7.
  */
-case class ShareStrategy(catalog: MjSessionCatalog)  extends OneRoundStrategy(catalog) {
+case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
   override protected def optimizeCore: LogicalPlan = {
     ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)
   }
 
-  override protected def costCore: Long = {
+  override protected def costCore: BigInt = {
     val rIdToShare = closures.map(s => s.map(_._2)).zipWithIndex.flatMap {
       case (rIds, sId) => rIds.map(r => (r, sId))
     }.groupBy(_._1).map {
       case (rId, sIds) => (rId, numShufflePartitions / sIds.map(x => shares(x._2)).fold(1)(_ * _))
     }
-    val statistics = relations.map(x => catalog.getInfo(x))
+    val statistics = relations.map(x => x.stats(conf))
 
     rIdToShare.map {
-      case (rId, replicate) => statistics(rId).size * replicate
+      case (rId, replicate) => statistics(rId).sizeInBytes * replicate
     }.sum
   }
 
-  override def attrOptimization(closureLength: Int,
+  override def attrOptimization[V](closureLength: Int,
                                 relations: Seq[LogicalPlan],
-                                statistics: Seq[TableInfo],
+                                statistics: Seq[MjStatistics[V]],
                                 exprToCid: Map[ExprId, Int]): Array[Seq[KeysAndTableId]] = {
     val orderedNodes = statistics.zipWithIndex.flatMap {
       case (child, id) =>
@@ -38,7 +40,7 @@ case class ShareStrategy(catalog: MjSessionCatalog)  extends OneRoundStrategy(ca
         keys.map {
           case e: AttributeReference =>
             val cId = exprToCid(e.exprId)
-            val card = child.getCardinality(e)
+            val card = child.attributeStats.get(e)
             (e, cId, card, id)
         }
     }.sortBy(_._3)

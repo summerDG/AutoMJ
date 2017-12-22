@@ -7,7 +7,7 @@ import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.{SparkSession, Strategy}
 import org.apache.spark.sql.execution.{ShareJoinSelection, SparkPlanner}
-import org.apache.spark.sql.internal.{BaseSessionStateBuilder, SessionState}
+import org.apache.spark.sql.internal.{BaseSessionStateBuilder, SQLConf, SessionState}
 import org.pasalab.automj._
 
 /**
@@ -39,7 +39,7 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
     new SparkPlanner(session.sparkContext, conf, experimentalMethods) {
 
       override def extraPlanningStrategies: Seq[Strategy] = {
-        val shareJoinStrategy: Strategy = ShareJoinSelection(catalog, conf)
+        val shareJoinStrategy: Strategy = ShareJoinSelection(conf)
 
         super.extraPlanningStrategies ++ Seq[Strategy](shareJoinStrategy)
       }
@@ -51,12 +51,12 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
       override def extendedOperatorOptimizationRules: Seq[Rule[LogicalPlan]] = {
         val sparkConf = session.sparkContext.conf
         val multiRoundStrategy: Option[MultiRoundStrategy] = sparkConf.getOption(MjConfigConst.MULTI_ROUND_STRATEGY)
-          .map(c => Class.forName(c).getConstructor(classOf[MjSessionCatalog]).newInstance(catalog).asInstanceOf[MultiRoundStrategy])
+          .map(c => Class.forName(c).getConstructor(classOf[SQLConf]).newInstance(conf).asInstanceOf[MultiRoundStrategy])
         val oneRoundStrategy: Option[OneRoundStrategy] = sparkConf.getOption(MjConfigConst.ONE_ROUND_STRATEGY)
-          .map(c =>Class.forName(c).getConstructor(classOf[MjSessionCatalog]).newInstance(catalog).asInstanceOf[OneRoundStrategy])
+          .map(c =>Class.forName(c).getConstructor(classOf[SQLConf]).newInstance(conf).asInstanceOf[OneRoundStrategy])
         val joinSizeEstimator: Option[JoinSizeEstimator] = sparkConf.getOption(MjConfigConst.JOIN_SIZE_ESTIMATOR)
-          .map(c => Class.forName(c).getConstructor(classOf[MjSessionCatalog], classOf[SparkConf])
-            .newInstance(catalog, sparkConf).asInstanceOf[JoinSizeEstimator])
+          .map(c => Class.forName(c).getConstructor(classOf[SQLConf])
+            .newInstance(conf).asInstanceOf[JoinSizeEstimator])
 
         val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
           multiRoundStrategy, joinSizeEstimator, sparkConf.getBoolean(MjConfigConst.Force_ONE_ROUND, false))

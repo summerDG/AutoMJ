@@ -71,6 +71,13 @@
             <scope>provided</scope>
         </dependency>
 
+        <!-- for local data frame join -->
+        <dependency>
+            <groupId>joinery</groupId>
+            <artifactId>joinery-dataframe</artifactId>
+            <version>1.8</version>
+        </dependency>
+
         <!-- for test -->
         <dependency>
             <groupId>junit</groupId>

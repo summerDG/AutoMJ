@@ -3,13 +3,14 @@ import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable
 
 /**
  * Created by wuxiaoqi on 17-12-7.
  */
-case class LeftDepthStrategy(catalog: MjSessionCatalog) extends MultiRoundStrategy(catalog){
+case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
   override def optimize(joinConditions: Map[(Int, Int), (Seq[Expression], Seq[Expression])],
                         relations: Seq[LogicalPlan]): LogicalPlan = {
     val marked: mutable.Set[Int] = mutable.Set[Int]()
