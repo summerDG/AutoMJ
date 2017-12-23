@@ -4,7 +4,7 @@ import org.apache.spark.MjStatistics
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.KeysAndTableId
 import org.apache.spark.sql.execution.joins.ExpressionAndAttributes
 import org.apache.spark.sql.internal.SQLConf
@@ -46,7 +46,7 @@ abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logg
       s"equivalenceClasses(${equivalenceClasses.length})," +
         s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
 
-    val statistics: Seq[MjStatistics[Any]] = relations.map(_.stats(conf).asInstanceOf[MjStatistics[Any]])
+    val statistics: Seq[Statistics] = relations.map(_.stats(conf))
 
     val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
       case (nodes, cId) =>
@@ -205,9 +205,9 @@ abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logg
       relations != null && dimensionToExprs != null && closures != null
   }
 
-  protected def costCore: Long
+  protected def costCore: BigInt
 
-  def cost(): Long = {
+  def cost(): BigInt = {
     assert(hasArgument, "Please invoke <refresh> firstly to set arguments.")
     costCore
   }

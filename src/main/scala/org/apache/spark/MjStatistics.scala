@@ -1,31 +1,39 @@
 package org.apache.spark
 
 import java.math.{MathContext, RoundingMode}
+import java.util.UUID
 
 import joinery.DataFrame
-import org.apache.spark.sql.catalyst.expressions.AttributeMap
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeMap, AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, HintInfo, Statistics}
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.util.Utils
 
 /**
  * Created by wuxiaoqi on 17-12-22.
  */
-case class MjStatistics[V](
-                       override val sizeInBytes: BigInt,
-                       override val rowCount: Option[BigInt],
-                       override val attributeStats: AttributeMap[ColumnStat] = AttributeMap(Nil),
-                       override val hints: HintInfo = HintInfo(),
-                       sample: DataFrame[V], fraction: Double
-                       ) extends Statistics(sizeInBytes, rowCount, attributeStats, hints){
+case class MjStatistics(
+                       sizeInBytes: BigInt,
+                       rowCount: Option[BigInt],
+                       attributeStats: AttributeMap[ColumnStat] = AttributeMap(Nil),
+                       hints: HintInfo = HintInfo(),
+                       sample: DataFrame[Any], fraction: Double
+                       ){
   override def toString: String = s"MjStatistics($simpleString)"
 
-  override def simpleString: String = {
+  def toStatistics: Statistics = {
+    Statistics(sizeInBytes, rowCount, attributeStats, hints)
+  }
+  def extractSample: SampleStat[Any] = SampleStat(sample, fraction)
+
+  def simpleString: String = {
     Seq(s"sizeInBytes=${Utils.bytesToString(sizeInBytes)}",
       if (rowCount.isDefined) {
         s"rowCount=${BigDecimal(rowCount.get, new MathContext(3, RoundingMode.HALF_UP)).toString()}"
       } else {
         ""
       },
-      s"hints=$hints", s"sample(${sample.toString(100)}) by $fraction")
+      s"hints=$hints", s"sample(${sample.toString(100)}) by $fraction").filter(_.nonEmpty).mkString(", ")
   }
 }
+case class SampleStat[T](sample: DataFrame[T], fraction: Double)

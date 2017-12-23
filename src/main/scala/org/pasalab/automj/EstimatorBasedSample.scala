@@ -10,8 +10,8 @@ import scala.collection.mutable
 /**
  * Created by wuxiaoqi on 17-12-8.
  */
-case class EstimatorBasedSample(conf: SQLConf) extends JoinSizeEstimator(conf) {
-  override protected def costCore: Long = {
+case class EstimatorBasedSample(catalog: MjSessionCatalog, conf: SQLConf) extends JoinSizeEstimator(catalog, conf) {
+  override protected def costCore: BigInt = {
     //TODO: 调整join condition, 并且搞懂joinery.DataFrame的用法之后再具体修改
 //    val samples:Seq[DataFrame[Any]] = getSamples()
 //
@@ -67,6 +67,6 @@ case class EstimatorBasedSample(conf: SQLConf) extends JoinSizeEstimator(conf) {
 //      currentVertices = newVertices.toArray
 //    }
 //    communication
-    conf.getConfString(MjConfigConst.JOIN_DEFAULT_SIZE).toLong
+    BigInt(conf.getConfString(MjConfigConst.JOIN_DEFAULT_SIZE))
   }
 }

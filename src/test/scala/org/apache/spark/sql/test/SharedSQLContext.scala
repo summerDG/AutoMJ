@@ -24,6 +24,7 @@ import org.scalatest.BeforeAndAfterEach
 import org.scalatest.concurrent.Eventually
 import org.apache.spark.{DebugFilesystem, SparkConf}
 import org.apache.spark.sql.{SQLContext, SparkSession}
+import org.pasalab.automj.MjConfigConst
 
 /**
  * Helper trait for SQL test suites where all tests share a single [[TestSparkSession]].
@@ -32,6 +33,10 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
 
   protected def sparkConf = {
     new SparkConf().set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName)
+      .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
+      .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
+      .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+      .set(MjConfigConst.SAMPLE_FRACTION, "1.0")
   }
 
   /**

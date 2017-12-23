@@ -1,7 +1,9 @@
 package org.pasalab.automj
 
 import org.apache.spark.sql.automj.MjSessionCatalog
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.Expression
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.joins.ExpressionAndAttributes
 import org.apache.spark.sql.test.SharedSQLContext
 
@@ -9,16 +11,21 @@ import org.apache.spark.sql.test.SharedSQLContext
  * Created by wuxiaoqi on 17-12-12.
  */
 class OneRoundStrategySuite extends SharedSQLContext{
+  setupTestData()
   test("test refresh method") {
     val dataSource = triangleData
+    assert(dataSource.relations.nonEmpty, "triangleData relations is empty")
+    assert(dataSource.keys.nonEmpty, "triangleData keys is empty")
+    assert(dataSource.joinConditions.nonEmpty, "triangleData conditions is empty")
+    val tables = catalog.lookupRelation(TableIdentifier("testData2")).children ++ catalog.lookupRelation(TableIdentifier("b")).children ++ catalog.lookupRelation(TableIdentifier("c")).children
 
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
-    oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
+    oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, tables, 8, None)
     val closures = oneRoundStrategy.getClosures()
     val shares = oneRoundStrategy.getShares
 
     val attributes = dataSource.attributes
-    val tables = dataSource.relations
+
     val expectedClosures: Seq[Seq[(ExpressionAndAttributes, Int)]] = Seq[Seq[(ExpressionAndAttributes, Int)]](
       Seq[(ExpressionAndAttributes, Int)](
         (ExpressionAndAttributes(Seq[Expression](attributes("a.x")), tables(0).output), 0),
@@ -46,9 +53,9 @@ class OneRoundStrategySuite extends SharedSQLContext{
   }
   test("test cost model") {
     val dataSource = triangleData
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
-    val cost: Long = oneRoundStrategy.cost()
+    val cost: BigInt = oneRoundStrategy.cost()
     assert(cost == 60, s"Communication Cost is not correct, $cost != 60")
   }
 }

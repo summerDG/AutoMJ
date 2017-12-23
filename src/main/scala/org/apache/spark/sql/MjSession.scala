@@ -17,17 +17,19 @@ class MjSession private(
                          @transient private val existingSharedState: Option[SharedState],
                          @transient private val parentSessionState: Option[SessionState],
                          @transient override private[sql] val extensions: SparkSessionExtensions)
-  extends SparkSession(sparkContext) with Serializable with Closeable with Logging { self =>
+  extends SparkSession(sparkContext) { self =>
   private[sql] def this(sc: SparkContext) {
     this(sc, None, None, new SparkSessionExtensions)
   }
-  private val session = new SparkSession(sparkContext)
+  //TODO: 会产生stackOverflow
+  @InterfaceStability.Unstable
+  @transient
   override lazy val sessionState: SessionState = {
     parentSessionState
       .map(_.clone(this))
       .getOrElse {
-        val configs = session.conf.getAll
-        val state = new MjSessionStateBuilder(session, None).build()
+        val configs = sparkContext.conf.getAll
+        val state = new MjSessionStateBuilder(self, None).build()
         configs.foreach{case (k,v) => state.conf.setConfString(k, v)}
         state
       }

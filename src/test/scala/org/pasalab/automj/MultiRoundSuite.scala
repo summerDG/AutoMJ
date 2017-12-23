@@ -24,24 +24,33 @@ class MultiRoundSuite extends QueryTest with SharedSQLContext{
       case j: Join =>
         val left = j.left
         val right = j.right
-        right match {
-          case c =>
-            val name = getTableNameFromPlan(c)
-            helper(name, left, right)
-        }
+        val name = getTableNameFromPlan(right)
+        helper(name, left)
     }
-    def helper(s: String, left: LogicalPlan, right: LogicalPlan): Unit = s match {
+    def helper(s: String, left: LogicalPlan): Unit = s match {
       case "a" =>
         aIsEnd(left, 1, tableName)
       case "d" =>
         dIsEnd(left, 2, tableName)
       case x =>
-        fail(s"Last Join relation should be a or d (not $x)")
+        fail(s"Last Join relation should be a or d (not $x, left is join: ${left.isInstanceOf[Join]})")
     }
   }
 
   def getTableNameFromPlan(c: LogicalPlan): String = {
-    if (c.output.head.name == "x") "a" else "d"
+    val output = c.output
+    if (output.length == 1) {
+      if (output.head.name == "x") "a" else "d"
+    } else if (output.length == 2){
+      val first = output(0).name
+      val second = output(1).name
+      (first, second) match {
+        case ("x", "y") => "b"
+        case ("y", "z") => "c"
+      }
+    } else {
+      throw new IllegalArgumentException
+    }
   }
 
   private def aIsEnd(head: LogicalPlan, idx: Int, tableName: Seq[String]): Unit = {

@@ -51,12 +51,13 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
       override def extendedOperatorOptimizationRules: Seq[Rule[LogicalPlan]] = {
         val sparkConf = session.sparkContext.conf
         val multiRoundStrategy: Option[MultiRoundStrategy] = sparkConf.getOption(MjConfigConst.MULTI_ROUND_STRATEGY)
-          .map(c => Class.forName(c).getConstructor(classOf[SQLConf]).newInstance(conf).asInstanceOf[MultiRoundStrategy])
+          .map(c => Class.forName(c).getConstructors.head.newInstance(conf).asInstanceOf[MultiRoundStrategy])
+
         val oneRoundStrategy: Option[OneRoundStrategy] = sparkConf.getOption(MjConfigConst.ONE_ROUND_STRATEGY)
-          .map(c =>Class.forName(c).getConstructor(classOf[SQLConf]).newInstance(conf).asInstanceOf[OneRoundStrategy])
+          .map(c =>Class.forName(c).getConstructors.head.newInstance(catalog, conf).asInstanceOf[OneRoundStrategy])
+
         val joinSizeEstimator: Option[JoinSizeEstimator] = sparkConf.getOption(MjConfigConst.JOIN_SIZE_ESTIMATOR)
-          .map(c => Class.forName(c).getConstructor(classOf[SQLConf])
-            .newInstance(conf).asInstanceOf[JoinSizeEstimator])
+          .map(c => Class.forName(c).getConstructors.head.newInstance(catalog, conf).asInstanceOf[JoinSizeEstimator])
 
         val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
           multiRoundStrategy, joinSizeEstimator, sparkConf.getBoolean(MjConfigConst.Force_ONE_ROUND, false))

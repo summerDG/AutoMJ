@@ -1,9 +1,8 @@
 package org.pasalab.automj
 
 import joinery.DataFrame
-import org.apache.spark.{MjStatistics, SparkConf}
-import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.Column
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.internal.SQLConf
@@ -11,7 +10,7 @@ import org.apache.spark.sql.internal.SQLConf
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class JoinSizeEstimator(conf: SQLConf) {
+abstract class JoinSizeEstimator(catalog: MjSessionCatalog, conf: SQLConf) {
   protected var p: Double = 1
   protected var joinConditions: Map[(Int, Int), Column] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -27,9 +26,9 @@ abstract class JoinSizeEstimator(conf: SQLConf) {
     }
     relations = tables
   }
-  protected def costCore: Long
+  protected def costCore: BigInt
 
-  def cost(): Long = {
+  def cost(): BigInt = {
     assert(hasArgument, "Please invoke <refresh> firstly to set arguments.")
     costCore
   }
@@ -38,12 +37,12 @@ abstract class JoinSizeEstimator(conf: SQLConf) {
   }
 
   def getProbability(): Seq[Double] = {
-    val p = relations.map(r => r.stats(conf).asInstanceOf[MjStatistics[Any]].fraction)
+    val p = relations.flatMap(r => catalog.getSample(r)).map(_.fraction)
     assert(relations.length == p.length, "some relations have no sample probability")
     p
   }
   def getSamples(): Seq[DataFrame[Any]] = {
-    val s = relations.map(r => r.stats(conf).asInstanceOf[MjStatistics[Any]].sample)
+    val s = relations.flatMap(r => catalog.getSample(r)).map(_.sample)
     assert(relations.length == s.length, "some relations have no sample")
     s
   }

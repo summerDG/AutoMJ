@@ -1,7 +1,7 @@
 package org.pasalab.automj
 
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression}
 
 /**
  * Created by wuxiaoqi on 17-11-28.

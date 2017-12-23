@@ -22,19 +22,20 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
         (k, v.map(_._2))
     }
 
-    val firstId = edges.find(p => p._2.length == 1).get._1
+    val firstId = edges.filter(p => p._2.length == 1).head._1
     var currentVertices:Array[Int] = Array[Int](firstId)
 
     var join: LogicalPlan = relations(firstId)
 
-    def generateJoin(v: Int, n: Int): Unit = {
+    def generateJoin(v: Int, n: Int, plan: LogicalPlan): Unit = {
       val (left, right) = joinConditions((v, n))
       val condition: Expression = left.zip(right).map {
         case (l, r) => EqualTo(l, r).asInstanceOf[Expression]
       }.reduce((l, r) => And(l, r))
-      join = Join(join, relations(n), Inner, Some(condition))
+      join = Join(join, plan, Inner, Some(condition))
     }
 
+    var joinSeq = s"$firstId"
     while (!currentVertices.isEmpty) {
       val newVertices: mutable.ArrayBuffer[Int] = mutable.ArrayBuffer[Int]()
 
@@ -44,10 +45,11 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
 
         for (n <- neighbourhood) {
           assert(joinConditions.contains((v, n))|| joinConditions.contains((n, v)), "construct graph problem")
+          joinSeq += s", $n"
           if (joinConditions.contains((v, n))) {
-            generateJoin(v, n)
+            generateJoin(v, n, relations(n))
           } else {
-            generateJoin(n, v)
+            generateJoin(n, v, relations(n))
           }
         }
         newVertices ++= neighbourhood

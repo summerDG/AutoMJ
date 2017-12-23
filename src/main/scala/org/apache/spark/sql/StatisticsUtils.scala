@@ -1,9 +1,12 @@
 package org.apache.spark.sql
 
+import java.util.UUID
+
 import com.clearspring.analytics.stream.cardinality.HyperLogLogPlus
 import org.apache.spark.rdd.{PartitionwiseSampledRDDPartition, RDD}
-import org.apache.spark.sql.catalyst.expressions.AttributeMap
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeMap, AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan}
+import org.apache.spark.sql.types.StringType
 import org.apache.spark.util.random.{BernoulliSampler, RandomSampler}
 import org.apache.spark.{MjStatistics, Partition}
 import org.pasalab.automj.PartitionInfo
@@ -18,8 +21,10 @@ object StatisticsUtils {
   val relativeSD: Double = 0.05
   val p0 = math.ceil(2.0 * math.log(1.054 / relativeSD) / math.log(2)).toInt
   val seed: Long = new Random().nextLong
+  // attribute信息中增加一列, 列名为TableName, max为其表名
+  val tableName: Attribute = AttributeReference("TableName", StringType)(exprId = ExprId(0, UUID.fromString("TableName")))
 
-  def generateCatalogStatistics(sparkSession: SparkSession, logicalPlan: LogicalPlan, fraction: Double): MjStatistics[Any] = {
+  def generateCatalogStatistics(sparkSession: SparkSession, name: String, logicalPlan: LogicalPlan, fraction: Double): MjStatistics = {
     val df = Dataset.ofRows(sparkSession, logicalPlan)
     val schema = df.schema
     val rdd = df.rdd
@@ -84,10 +89,13 @@ object StatisticsUtils {
       case (k, v) =>
         k -> ColumnStat(v, None, None, 0, 8, 8)
     }
-    val matched = logicalPlan.output.flatMap(a => colStats.get(a.name).map(a -> _))
+    val stat: ColumnStat = ColumnStat(distinctCount = 0, nullCount = 0, min = None, max = Some(name), avgLen = 0, maxLen = 0)
+    val matched = logicalPlan.output
+      .flatMap(a => colStats.get(a.name).map(a -> _)) :+ tableName -> stat
 
-
-    MjStatistics(sizeInBytes = size, rowCount = Some(count), attributeStats = AttributeMap(matched),
+    // attribute信息中增加一列, 列名为TableName, max为其表名
+    val attributeStats: AttributeMap[ColumnStat] = AttributeMap(matched)
+    MjStatistics(sizeInBytes = size, rowCount = Some(count), attributeStats = attributeStats,
       sample = sample, fraction = fraction)
   }
 
