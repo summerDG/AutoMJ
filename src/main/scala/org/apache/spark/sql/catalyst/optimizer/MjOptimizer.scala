@@ -20,7 +20,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
       val oneRoundCore = oneRoundStrategy.get
       val multiRoundCore = multiRoundStrategy.get
       val joinSizeEstimatorCore = joinSizeEstimator.get
-      plan match {
+      plan transform {
         case MjExtractor(keysEachRelation,
         originBothKeysEachCondition, otherConditions, relations) =>
           // 找出查询结构中的环

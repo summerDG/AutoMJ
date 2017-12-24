@@ -11,15 +11,14 @@ import org.apache.spark.sql.test.SharedSQLContext
  * Created by wuxiaoqi on 17-12-12.
  */
 class OneRoundStrategySuite extends SharedSQLContext{
-  setupTestData()
   test("test refresh method") {
     val dataSource = triangleData
     assert(dataSource.relations.nonEmpty, "triangleData relations is empty")
     assert(dataSource.keys.nonEmpty, "triangleData keys is empty")
     assert(dataSource.joinConditions.nonEmpty, "triangleData conditions is empty")
-    val tables = catalog.lookupRelation(TableIdentifier("testData2")).children ++ catalog.lookupRelation(TableIdentifier("b")).children ++ catalog.lookupRelation(TableIdentifier("c")).children
+    val tables = dataSource.relations
 
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, tables, 8, None)
     val closures = oneRoundStrategy.getClosures()
     val shares = oneRoundStrategy.getShares
@@ -53,7 +52,7 @@ class OneRoundStrategySuite extends SharedSQLContext{
   }
   test("test cost model") {
     val dataSource = triangleData
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val cost: BigInt = oneRoundStrategy.cost()
     assert(cost == 60, s"Communication Cost is not correct, $cost != 60")

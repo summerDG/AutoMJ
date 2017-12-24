@@ -53,6 +53,7 @@ case class ShareJoinSelection(conf: SQLConf) extends Strategy
 
       LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
         conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
+    case _ => Nil
   }
 
   def defaultNumPreShufflePartitions: Int = conf.numShufflePartitions

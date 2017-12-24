@@ -1,6 +1,5 @@
 package org.pasalab.automj
 
-import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin, Statistics}
 import org.apache.spark.sql.execution.KeysAndTableId
@@ -12,7 +11,7 @@ import scala.collection.mutable
  * Created by wuxiaoqi on 17-12-7.
  */
 //TODO: catalog可能在属性重排序的时候用到, 现在的策略不需要
-case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneRoundStrategy(conf) {
+case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
   override protected def optimizeCore: LogicalPlan = {
     ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)

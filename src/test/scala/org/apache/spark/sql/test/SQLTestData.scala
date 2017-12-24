@@ -277,7 +277,7 @@ private[sql] trait SQLTestData { self =>
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("a")
+    df.createOrReplaceTempView("a")
     df
   }
   protected lazy val alDF: DataFrame = {
@@ -288,7 +288,7 @@ private[sql] trait SQLTestData { self =>
         XData(4) ::
         XData(5) ::
         XData(6) :: Nil, 2).toDF()
-    df.createGlobalTempView("al")
+    df.createOrReplaceTempView("al")
     df
   }
   protected lazy val bDF: DataFrame = {
@@ -299,7 +299,7 @@ private[sql] trait SQLTestData { self =>
         XyData(2, 2) ::
         XyData(3, 1) ::
         XyData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("b")
+    df.createOrReplaceTempView("b")
     df
   }
   protected lazy val cDF: DataFrame = {
@@ -310,7 +310,7 @@ private[sql] trait SQLTestData { self =>
         YzData(2, 2) ::
         YzData(3, 1) ::
         YzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("c")
+    df.createOrReplaceTempView("c")
     df
   }
   protected lazy val dDF: DataFrame = {
@@ -321,7 +321,7 @@ private[sql] trait SQLTestData { self =>
         SzData(2, 2) ::
         SzData(3, 1) ::
         SzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("d")
+    df.createOrReplaceTempView("d")
     df
   }
   protected lazy val dlDF: DataFrame = {
@@ -332,7 +332,7 @@ private[sql] trait SQLTestData { self =>
         ZData(4) ::
         ZData(5) ::
         ZData(6) :: Nil, 2).toDF()
-    df.createGlobalTempView("dl")
+    df.createOrReplaceTempView("dl")
     df
   }
   protected lazy val daDF: DataFrame = {
@@ -343,7 +343,7 @@ private[sql] trait SQLTestData { self =>
         ZpData(2, 2) ::
         ZpData(3, 1) ::
         ZpData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("da")
+    df.createOrReplaceTempView("da")
     df
   }
   protected lazy val eDF: DataFrame = {
@@ -354,7 +354,7 @@ private[sql] trait SQLTestData { self =>
         SxData(2, 2) ::
         SxData(3, 1) ::
         SxData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("e")
+    df.createOrReplaceTempView("e")
     df
   }
   protected lazy val eaDF: DataFrame = {
@@ -365,7 +365,7 @@ private[sql] trait SQLTestData { self =>
         PqData(2, 2) ::
         PqData(3, 1) ::
         PqData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("ea")
+    df.createOrReplaceTempView("ea")
     df
   }
   protected lazy val fDF: DataFrame = {
@@ -376,7 +376,7 @@ private[sql] trait SQLTestData { self =>
         SyData(2, 2) ::
         SyData(3, 1) ::
         SyData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("f")
+    df.createOrReplaceTempView("f")
     df
   }
   protected lazy val faDF: DataFrame = {
@@ -387,7 +387,7 @@ private[sql] trait SQLTestData { self =>
         QsData(2, 2) ::
         QsData(3, 1) ::
         QsData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("fa")
+    df.createOrReplaceTempView("fa")
     df
   }
   protected lazy val gDF: DataFrame = {
@@ -398,7 +398,7 @@ private[sql] trait SQLTestData { self =>
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("g")
+    df.createOrReplaceTempView("g")
     df
   }
   protected lazy val hDF: DataFrame = {
@@ -409,7 +409,7 @@ private[sql] trait SQLTestData { self =>
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("h")
+    df.createOrReplaceTempView("h")
     df
   }
   protected lazy val iDF: DataFrame = {
@@ -420,7 +420,7 @@ private[sql] trait SQLTestData { self =>
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("i")
+    df.createOrReplaceTempView("i")
     df
   }
   protected lazy val jDF: DataFrame = {
@@ -431,7 +431,7 @@ private[sql] trait SQLTestData { self =>
         XzData(2, 2) ::
         XzData(3, 1) ::
         XzData(3, 2) :: Nil, 2).toDF()
-    df.createGlobalTempView("j")
+    df.createOrReplaceTempView("j")
     df
   }
 

@@ -29,7 +29,7 @@ class MjSession private(
       .map(_.clone(this))
       .getOrElse {
         val configs = sparkContext.conf.getAll
-        val state = new MjSessionStateBuilder(self, None).build()
+        val state = MjSession.instantiateSessionState(self)
         configs.foreach{case (k,v) => state.conf.setConfString(k, v)}
         state
       }
@@ -54,5 +54,10 @@ class MjSession private(
     val result = new MjSession(sparkContext, Some(sharedState), Some(sessionState), extensions)
     result.sessionState // force copy of SessionState
     result
+  }
+}
+object MjSession {
+  private def instantiateSessionState(sparkSession: SparkSession): SessionState = {
+    new MjSessionStateBuilder(sparkSession, None).build()
   }
 }

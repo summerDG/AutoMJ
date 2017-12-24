@@ -28,6 +28,10 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
 
   private val fraction: Double = conf.getConfString(MjConfigConst.SAMPLE_FRACTION).toDouble
   private val samples = new mutable.HashMap[String, SampleStat[Any]]()
+  private val statsName: String = "org$apache$spark$sql$catalyst$plans$logical$LogicalPlan$$statsCache"
+
+  var code: Int = 0
+  private val codeToName = new mutable.HashMap[Int, String]()
 
   override def createGlobalTempView(name: String, viewDefinition: LogicalPlan, overrideIfExists: Boolean): Unit = {
     super.createGlobalTempView(name, viewDefinition, overrideIfExists)
@@ -45,21 +49,31 @@ class MjSessionCatalog(externalCatalog: ExternalCatalog,
   // 使用反射给View对应的LogicalPlan增加统计信息
   def addStatistics(plan: LogicalPlan, name: String): Unit = {
     val viewName = formatTableName(name)
-    val statsField = plan.getClass.getDeclaredField("statsCache")
+
+    var clazz: Class[_] = plan.getClass
+    while (clazz != classOf[LogicalPlan]) {
+      clazz = clazz.getSuperclass
+    }
+
+    val statsField = clazz.getDeclaredField(statsName)
     val accessible = statsField.isAccessible
     if (!accessible) statsField.setAccessible(true)
-    val mjStatistics = StatisticsUtils.generateCatalogStatistics(sqlContext.sparkSession, viewName, plan, fraction)
+    codeToName.put(code, viewName)
+    val mjStatistics = StatisticsUtils.generateCatalogStatistics(sqlContext.sparkSession, code, plan, fraction)
     statsField.set(plan, Some(mjStatistics.toStatistics))
     statsField.setAccessible(accessible)
 
     samples += viewName -> mjStatistics.extractSample
+    code += 1
   }
 
   def getSample(name: String): Option[SampleStat[Any]] = samples.get(formatTableName(name))
 
+  def getSample(code: Int): Option[SampleStat[Any]] = getSample(codeToName.get(code).get)
+
   def getSample(logicalPlan: LogicalPlan): Option[SampleStat[Any]] = {
     val tableName: Option[Any] = logicalPlan.stats(conf).attributeStats(StatisticsUtils.tableName).max
     assert(tableName.isDefined, "This logicalPlan has no tableName, so no Sample")
-    getSample(tableName.get.asInstanceOf[String])
+    getSample(tableName.get.asInstanceOf[Int])
   }
 }

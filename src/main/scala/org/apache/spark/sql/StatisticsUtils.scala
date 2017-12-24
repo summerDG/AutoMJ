@@ -22,9 +22,9 @@ object StatisticsUtils {
   val p0 = math.ceil(2.0 * math.log(1.054 / relativeSD) / math.log(2)).toInt
   val seed: Long = new Random().nextLong
   // attribute信息中增加一列, 列名为TableName, max为其表名
-  val tableName: Attribute = AttributeReference("TableName", StringType)(exprId = ExprId(0, UUID.fromString("TableName")))
+  val tableName: Attribute = AttributeReference("TableName", StringType)(exprId = ExprId(0, UUID.randomUUID()))
 
-  def generateCatalogStatistics(sparkSession: SparkSession, name: String, logicalPlan: LogicalPlan, fraction: Double): MjStatistics = {
+  def generateCatalogStatistics(sparkSession: SparkSession, nameCode: Int, logicalPlan: LogicalPlan, fraction: Double): MjStatistics = {
     val df = Dataset.ofRows(sparkSession, logicalPlan)
     val schema = df.schema
     val rdd = df.rdd
@@ -89,7 +89,7 @@ object StatisticsUtils {
       case (k, v) =>
         k -> ColumnStat(v, None, None, 0, 8, 8)
     }
-    val stat: ColumnStat = ColumnStat(distinctCount = 0, nullCount = 0, min = None, max = Some(name), avgLen = 0, maxLen = 0)
+    val stat: ColumnStat = ColumnStat(distinctCount = 0, nullCount = 0, min = None, max = Some(nameCode), avgLen = 0, maxLen = 0)
     val matched = logicalPlan.output
       .flatMap(a => colStats.get(a.name).map(a -> _)) :+ tableName -> stat
 
