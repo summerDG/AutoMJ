@@ -54,8 +54,8 @@ case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
         newOrderedAttr(ascend(cId)) += KeysAndTableId(exprs :: Nil, id)
       } else {
         ascend += cId -> currentId
-        currentId += 1
         newOrderedAttr(currentId) += KeysAndTableId(exprs :: Nil, id)
+        currentId += 1
       }
     }
 

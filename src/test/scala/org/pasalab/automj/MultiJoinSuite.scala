@@ -7,6 +7,9 @@ import org.apache.spark.sql.test.SharedSQLContext
  * Created by wuxiaoqi on 17-12-13.
  */
 class MultiJoinSuite extends QueryTest with SharedSQLContext{
+  test("java lib path") {
+    assert(false,s"${System.getProperty("java.library.path")}")
+  }
 //  setupTestData()
 //  //TODO: 改正sql String
 //  test("triangle data correctness test(one round)") {
