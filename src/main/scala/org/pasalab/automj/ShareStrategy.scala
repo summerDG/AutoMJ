@@ -1,5 +1,7 @@
 package org.pasalab.automj
 
+import org.apache.spark.MjStatistics
+import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin, Statistics}
 import org.apache.spark.sql.execution.KeysAndTableId
@@ -11,19 +13,20 @@ import scala.collection.mutable
  * Created by wuxiaoqi on 17-12-7.
  */
 //TODO: catalog可能在属性重排序的时候用到, 现在的策略不需要
-case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
+case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneRoundStrategy(catalog, conf) {
   override protected def optimizeCore: LogicalPlan = {
     ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)
   }
 
-  override protected def costCore: BigInt = {
+  override protected def costCore(): BigInt = {
     val rIdToShare = closures.map(s => s.map(_._2)).zipWithIndex.flatMap {
       case (rIds, sId) => rIds.map(r => (r, sId))
     }.groupBy(_._1).map {
       case (rId, sIds) => (rId, numShufflePartitions / sIds.map(x => shares(x._2)).fold(1)(_ * _))
     }
-    val statistics = relations.map(x => x.stats(conf))
+    val statistics = relations.flatMap(x => catalog.getStatistics(x))
+    assert(statistics.length == relations.length, "some relation has no statistics")
 
     rIdToShare.map {
       case (rId, replicate) => statistics(rId).sizeInBytes * replicate
@@ -32,7 +35,7 @@ case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
 
   override def attrOptimization(closureLength: Int,
                                 relations: Seq[LogicalPlan],
-                                statistics: Seq[Statistics],
+                                statistics: Seq[MjStatistics],
                                 exprToCid: Map[ExprId, Int]): Array[Seq[KeysAndTableId]] = {
     val orderedNodes = statistics.zipWithIndex.flatMap {
       case (child, id) =>
@@ -40,7 +43,7 @@ case class ShareStrategy(conf: SQLConf)  extends OneRoundStrategy(conf) {
         keys.map {
           case e: AttributeReference =>
             val cId = exprToCid(e.exprId)
-            assert(child.attributeStats.nonEmpty, "Statistics is empty!!!!")
+            assert(child.attributeStats.nonEmpty, s"attributeStates is empty!!!!(size: ${child.sizeInBytes}, count: ${child.rowCount})")
             val card = child.attributeStats.get(e).get.distinctCount
             (e, cId, card, id)
         }

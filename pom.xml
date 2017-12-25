@@ -115,7 +115,8 @@
         <dependency>
             <groupId>org.gnu.glpk</groupId>
             <artifactId>glpk-java</artifactId>
-            <version>1.11.0</version>
+            <version>1.7.0</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
     <build>

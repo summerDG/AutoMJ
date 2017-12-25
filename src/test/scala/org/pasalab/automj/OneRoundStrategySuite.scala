@@ -18,7 +18,7 @@ class OneRoundStrategySuite extends SharedSQLContext{
     assert(dataSource.joinConditions.nonEmpty, "triangleData conditions is empty")
     val tables = dataSource.relations
 
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, tables, 8, None)
     val closures = oneRoundStrategy.getClosures()
     val shares = oneRoundStrategy.getShares
@@ -27,16 +27,16 @@ class OneRoundStrategySuite extends SharedSQLContext{
 
     val expectedClosures: Seq[Seq[(ExpressionAndAttributes, Int)]] = Seq[Seq[(ExpressionAndAttributes, Int)]](
       Seq[(ExpressionAndAttributes, Int)](
-        (ExpressionAndAttributes(Seq[Expression](attributes("a.x")), tables(0).output), 0),
-        (ExpressionAndAttributes(Seq[Expression](attributes("b.x")), tables(1).output), 1)
+        (ExpressionAndAttributes(Seq[Expression](attributes("a.z")), tables(0).output), 0),
+        (ExpressionAndAttributes(Seq[Expression](attributes("c.z")), tables(2).output), 2)
       ),
       Seq[(ExpressionAndAttributes, Int)](
         (ExpressionAndAttributes(Seq[Expression](attributes("b.y")), tables(1).output), 1),
         (ExpressionAndAttributes(Seq[Expression](attributes("c.y")), tables(2).output), 2)
       ),
       Seq[(ExpressionAndAttributes, Int)](
-        (ExpressionAndAttributes(Seq[Expression](attributes("a.z")), tables(0).output), 0),
-        (ExpressionAndAttributes(Seq[Expression](attributes("c.z")), tables(2).output), 2)
+        (ExpressionAndAttributes(Seq[Expression](attributes("a.x")), tables(0).output), 0),
+        (ExpressionAndAttributes(Seq[Expression](attributes("b.x")), tables(1).output), 1)
       )
     )
     for (i <- 0 to closures.length - 1) {
@@ -47,14 +47,14 @@ class OneRoundStrategySuite extends SharedSQLContext{
           l._1 == r._1 && l._2 == r._2
       }, s"Computed Closure No.$i: len-${t.length}, ${t.toString()}" +
         s"Expected Closure No.$i: len-${e.length}, ${e.toString()}")
-      assert(shares(i) == 2, s"Shares($i)=${shares(i)}, not 2")
+      assert(shares(i) == 2, s"Shares($i)=${shares(i)} in ${shares.toString()}, not 2")
     }
   }
   test("test cost model") {
     val dataSource = triangleData
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(sqlConf)
+    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
     oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
     val cost: BigInt = oneRoundStrategy.cost()
-    assert(cost == 60, s"Communication Cost is not correct, $cost != 60")
+    assert(cost == 72, s"Communication Cost is not correct, $cost != 72")
   }
 }

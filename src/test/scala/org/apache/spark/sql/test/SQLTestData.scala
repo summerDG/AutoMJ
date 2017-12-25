@@ -392,45 +392,45 @@ private[sql] trait SQLTestData { self =>
   }
   protected lazy val gDF: DataFrame = {
     val df = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
+      SData(1) ::
+        SData(2) ::
+        SData(3) ::
+        SData(4) ::
+        SData(5) ::
+        SData(6) :: Nil, 2).toDF()
     df.createOrReplaceTempView("g")
     df
   }
   protected lazy val hDF: DataFrame = {
     val df = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
+      YrData(1, 1) ::
+        YrData(1, 2) ::
+        YrData(2, 1) ::
+        YrData(2, 2) ::
+        YrData(3, 1) ::
+        YrData(3, 2) :: Nil, 2).toDF()
     df.createOrReplaceTempView("h")
     df
   }
   protected lazy val iDF: DataFrame = {
     val df = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
+      RwData(1, 1) ::
+        RwData(1, 2) ::
+        RwData(2, 1) ::
+        RwData(2, 2) ::
+        RwData(3, 1) ::
+        RwData(3, 2) :: Nil, 2).toDF()
     df.createOrReplaceTempView("i")
     df
   }
   protected lazy val jDF: DataFrame = {
     val df = spark.sparkContext.parallelize(
-      XzData(1, 1) ::
-        XzData(1, 2) ::
-        XzData(2, 1) ::
-        XzData(2, 2) ::
-        XzData(3, 1) ::
-        XzData(3, 2) :: Nil, 2).toDF()
+      WData(1) ::
+        WData(2) ::
+        WData(3) ::
+        WData(4) ::
+        WData(5) ::
+        WData(6) :: Nil, 2).toDF()
     df.createOrReplaceTempView("j")
     df
   }

@@ -54,7 +54,7 @@ class MjSessionStateBuilder(session: SparkSession, parentState: Option[SessionSt
           .map(c => Class.forName(c).getConstructors.head.newInstance(conf).asInstanceOf[MultiRoundStrategy])
 
         val oneRoundStrategy: Option[OneRoundStrategy] = sparkConf.getOption(MjConfigConst.ONE_ROUND_STRATEGY)
-          .map(c =>Class.forName(c).getConstructors.head.newInstance(conf).asInstanceOf[OneRoundStrategy])
+          .map(c =>Class.forName(c).getConstructors.head.newInstance(catalog, conf).asInstanceOf[OneRoundStrategy])
 
         val joinSizeEstimator: Option[JoinSizeEstimator] = sparkConf.getOption(MjConfigConst.JOIN_SIZE_ESTIMATOR)
           .map(c => Class.forName(c).getConstructors.head.newInstance(catalog, conf).asInstanceOf[JoinSizeEstimator])

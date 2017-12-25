@@ -15,7 +15,7 @@ import scala.util.Random
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logging{
+abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extends AttributesOrder with Logging{
   protected var reorderedKeysEachTable: Seq[Seq[Expression]] = null
   protected var bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -46,7 +46,8 @@ abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logg
       s"equivalenceClasses(${equivalenceClasses.length})," +
         s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
 
-    val statistics: Seq[Statistics] = relations.map(_.stats(conf))
+    val statistics: Seq[MjStatistics] = relations.flatMap(x => catalog.getStatistics(x))
+    assert(statistics.length == relations.length, s"some relation has no statistics(${statistics.length})")
 
     val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
       case (nodes, cId) =>
@@ -140,10 +141,15 @@ abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logg
       for (col <- 0 until shares.length) {
         val part = caseNums / math.pow(2, col + 1).asInstanceOf[Int]
         for (row <- 0 until caseNums) {
-          if ((row / part) % 2 == 0) {
+          // 如果得出来的share正好是一个整数，那么就不用找邻居了
+          if (shares(col) - shares(col).asInstanceOf[Int] == 0) {
             cases(row)(col) = shares(col).asInstanceOf[Int]
           } else {
-            cases(row)(col) = shares(col).asInstanceOf[Int] + 1
+            if ((row / part) % 2 == 0) {
+              cases(row)(col) = shares(col).asInstanceOf[Int]
+            } else {
+              cases(row)(col) = shares(col).asInstanceOf[Int] + 1
+            }
           }
         }
       }
@@ -205,7 +211,7 @@ abstract class OneRoundStrategy(conf: SQLConf) extends AttributesOrder with Logg
       relations != null && dimensionToExprs != null && closures != null
   }
 
-  protected def costCore: BigInt
+  protected def costCore(): BigInt
 
   def cost(): BigInt = {
     assert(hasArgument, "Please invoke <refresh> firstly to set arguments.")

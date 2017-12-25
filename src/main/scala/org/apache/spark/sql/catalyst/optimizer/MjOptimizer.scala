@@ -43,10 +43,13 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
             case ((l, r), v) =>
               (idMap(l), idMap(r)) -> v
           }
-          oneRoundCore.refresh(oneRoundKeys, oneRoundJoins, oneRoundRelations, 1024)
-          joinSizeEstimatorCore.refresh(oneRoundJoins, oneRoundRelations)
-
-          val useOneRound: Boolean = forceOneRound || oneRoundCore.cost() < joinSizeEstimatorCore.cost()
+          val useOneRound: Boolean = if (oneRoundRelations.nonEmpty) {
+            oneRoundCore.refresh(oneRoundKeys, oneRoundJoins, oneRoundRelations, 8)
+            joinSizeEstimatorCore.refresh(oneRoundJoins, oneRoundRelations)
+            forceOneRound || oneRoundCore.cost() < joinSizeEstimatorCore.cost()
+          } else {
+            false
+          }
 
           // 如果OneRound策略的通信量小，那么就对剩余的Join条件进行划分，分出哪些用于链接OneRound，哪些用于MultiRound内部
           val (combinedConditionMap, multiRoundCondition) = if (useOneRound) {
@@ -65,41 +68,50 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           // 将剩余的relations按照Join条件组织成一张图, 凡是有Join关系的表就会相连, 进行等价类划分
           // 然后把与ShareJoin相连的condition也按照等价类划分出来
           // 每个branch表示(join分支, 和shareJoin连接的条件)
-          val branches = Graph(multiRoundCondition.map(_._1).toSeq).connectComponent().map {
-            case nodes =>
-              val set = nodes.map(_.v).toSet
-              val branchMap = multiRoundCondition.filter {
-                case ((l,r),x) =>
-                  set.contains(l) && set.contains(r)
-              }.toMap
+          // 如果没有环, 那么branches就是长度就为1
+          val branches = if (multiRoundCondition.nonEmpty) {
+            Graph(multiRoundCondition.map(_._1).toSeq).connectComponent().map {
+              case nodes =>
+                val set = nodes.map(_.v).toSet
+                val branchMap = multiRoundCondition.filter {
+                  case ((l, r), x) =>
+                    set.contains(l) && set.contains(r)
+                }.toMap
 
-              // 当前分支涉及到的表
-              val relationIds: Set[Int] = branchMap.toSeq.flatMap {
-                case ((l, r), v) =>
-                  Seq[Int](l, r)
-              }.toSet
-              // 当前分支和环结构连接的条件, combinedConditionMap每个条件最多只可能包含当前分支的一张表
-              val combinedCondition: Expression = combinedConditionMap.filter{
-                case ((l, r), c) =>
-                  relationIds.contains(l) || relationIds.contains(r)
-              }.flatMap {
-                case ((l, r), (lk,rk)) =>
-                  lk.zip(rk).map(x => EqualTo(x._1, x._2).asInstanceOf[Expression])
-              }.reduce((l,r) => And(l, r))
+                // 当前分支涉及到的表
+                val relationIds: Set[Int] = branchMap.toSeq.flatMap {
+                  case ((l, r), v) =>
+                    Seq[Int](l, r)
+                }.toSet
+                // 当前分支和环结构连接的条件, combinedConditionMap每个条件最多只可能包含当前分支的一张表
+                val combinedCondition: Option[Expression] = if (combinedConditionMap.nonEmpty) {
+                  Some(
+                    combinedConditionMap
+                      .filter {
+                        case ((l, r), c) => relationIds.contains(l) || relationIds.contains(r)
+                      }
+                      .flatMap {
+                        case ((l, r), (lk, rk)) =>
+                          lk.zip(rk).map(x => EqualTo(x._1, x._2).asInstanceOf[Expression])
+                      }.reduce((l, r) => And(l, r))
+                  )
+                } else None
 
-              (multiRoundCore.optimize(branchMap, relations), combinedCondition)
-          }
+                (multiRoundCore.optimize(branchMap, relations), combinedCondition)
+            }
+          } else Nil
 
           // 合并一轮Join节点和多轮Join的节点
           val j: LogicalPlan = if (useOneRound) {
+            assert(branches.length > 0, "when use one round strategy, the plan must have at least 1 branch")
             val oneRound: LogicalPlan = oneRoundCore.optimize()
             branches.foldLeft(oneRound) {
               case (pre, branch) =>
-                Join(pre, branch._1, Inner, Some(branch._2))
+                Join(pre, branch._1, Inner, branch._2)
             }
           } else {
             // 因为没有环，所以这张图是联通的
-            branches(0)._1
+            branches.head._1
           }
 
           // 如果多轮Join之后还有条件谓词，就加个过滤器

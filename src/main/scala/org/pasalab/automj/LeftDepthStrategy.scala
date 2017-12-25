@@ -22,7 +22,11 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
         (k, v.map(_._2))
     }
 
-    val firstId = edges.filter(p => p._2.length == 1).head._1
+    val firstId = {
+      val endNode = edges.filter(p => p._2.length == 1)
+      if (endNode.isEmpty) 0
+      else endNode.head._1
+    }
     var currentVertices:Array[Int] = Array[Int](firstId)
 
     var join: LogicalPlan = relations(firstId)
