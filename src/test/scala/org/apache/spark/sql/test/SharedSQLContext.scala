@@ -36,6 +36,7 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
       .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
       .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
       .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+      .set(MjConfigConst.ONE_ROUND_ONCE, "true")
       .set(MjConfigConst.SAMPLE_FRACTION, "1.0")
   }
 

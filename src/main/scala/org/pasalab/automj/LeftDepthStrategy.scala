@@ -13,7 +13,10 @@ import scala.collection.mutable
 case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
   override def optimize(joinConditions: Map[(Int, Int), (Seq[Expression], Seq[Expression])],
                         relations: Seq[LogicalPlan]): LogicalPlan = {
-    val marked: mutable.Set[Int] = mutable.Set[Int]()
+    // 用于标记已经用过的条件, 这个作用对于环形的查询来说是有必要的
+    val marked: mutable.Set[(Int, Int)] = mutable.HashSet[(Int, Int)]()
+    // 用于标记已经再语法树中的表
+    val scanned: mutable.Set[Int] = mutable.HashSet[Int]()
     val edges: Map[Int, Seq[Int]] = joinConditions.toSeq.map(_._1).flatMap {
       case (l, r) =>
         Seq[(Int, Int)]((l, r), (r, l))
@@ -25,7 +28,7 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
     val firstId = {
       val endNode = edges.filter(p => p._2.length == 1)
       if (endNode.isEmpty) 0
-      else endNode.head._1
+      else endNode.map(_._1).min
     }
     var currentVertices:Array[Int] = Array[Int](firstId)
 
@@ -39,24 +42,29 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
       join = Join(join, plan, Inner, Some(condition))
     }
 
-    var joinSeq = s"$firstId"
     while (!currentVertices.isEmpty) {
       val newVertices: mutable.ArrayBuffer[Int] = mutable.ArrayBuffer[Int]()
 
       for (v <- currentVertices) {
-        marked.add(v)
-        val neighbourhood = edges(v).filter(x => !marked.contains(x))
+        scanned.add(v)
+        val neighbourhood = edges(v).filter{
+          case x =>
+            if  (v < x) {
+              !marked(v, x)
+            } else !marked(x, v)
+        }
 
         for (n <- neighbourhood) {
           assert(joinConditions.contains((v, n))|| joinConditions.contains((n, v)), "construct graph problem")
-          joinSeq += s", $n"
           if (joinConditions.contains((v, n))) {
             generateJoin(v, n, relations(n))
           } else {
             generateJoin(n, v, relations(n))
           }
+          if (v < n) marked.add((v, n))
+          else marked.add((n, v))
         }
-        newVertices ++= neighbourhood
+        newVertices ++= neighbourhood.filter(x => !scanned.contains(x))
       }
 
       currentVertices = newVertices.toArray

@@ -32,6 +32,7 @@ private[sql] class TestSparkSession(sc: SparkContext) extends MjSession(sc) { se
         .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
         .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
         .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+        .set(MjConfigConst.ONE_ROUND_ONCE, "true")
     ))
   }
 

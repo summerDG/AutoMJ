@@ -12,4 +12,5 @@ object MjConfigConst {
   val Force_ONE_ROUND: String = "spark.automj.useOneRound"
   val ENABLE_STATISTICS: String = "spark.automj.statistics.enable"
   val SAMPLE_FRACTION: String = "spark.automj.statistics.sample.fraction"
+  val ONE_ROUND_ONCE: String = "spark.automj.oneRound.once"
 }

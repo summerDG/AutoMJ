@@ -1,5 +1,6 @@
 package org.apache.spark.sql.catalyst.optimizer
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, ShareJoin}
@@ -14,12 +15,15 @@ import scala.collection.mutable
 case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                        multiRoundStrategy: Option[MultiRoundStrategy] = None,
                        joinSizeEstimator: Option[JoinSizeEstimator] = None,
-                       forceOneRound: Boolean) extends Rule[LogicalPlan]{
+                       conf: SparkConf) extends Rule[LogicalPlan]{
   override def apply(plan: LogicalPlan): LogicalPlan = {
-    if (oneRoundStrategy.isDefined && multiRoundStrategy.isDefined && joinSizeEstimator.isDefined) {
+    if (conf.getBoolean(MjConfigConst.ONE_ROUND_ONCE, false) &&
+      oneRoundStrategy.isDefined && multiRoundStrategy.isDefined && joinSizeEstimator.isDefined) {
       val oneRoundCore = oneRoundStrategy.get
       val multiRoundCore = multiRoundStrategy.get
       val joinSizeEstimatorCore = joinSizeEstimator.get
+      val forceOneRound = conf.getBoolean(MjConfigConst.Force_ONE_ROUND, false)
+      conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
       plan transform {
         case MjExtractor(keysEachRelation,
         originBothKeysEachCondition, otherConditions, relations) =>
@@ -30,6 +34,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
             case ((l, r), _) =>
               circle.contains(l) && circle.contains(r)
           }
+          if (circle.nonEmpty) assert(tmpOneRoundCondition.nonEmpty, s"circle is ${circle.mkString(",")}")
           val keys = originBothKeysEachCondition.flatMap(x => x._2._1 ++ x._2._1).toSet
           val (oneRoundKeys, oneRoundRelations) = circle
             .map(rId => (keysEachRelation(rId).filter(keys), relations(rId))).unzip
@@ -37,7 +42,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           val oneRoundCondition = tmpOneRoundCondition.map {
             case ((l, r), v) =>
               ((idMap(l), idMap(r)), v)
-          }.toMap
+          }
 
           val oneRoundJoins= oneRoundCondition.map {
             case ((l, r), v) =>
@@ -131,6 +136,13 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
    * @return 带环结构的所有点
    */
   def findCircle(edges: Seq[(Int, Int)], len: Int): Seq[Int] = {
+    assert(edges.nonEmpty, "edges is empty")
+    val neighbors: Map[Int, Seq[Int]] = edges.flatMap {
+      case (l, r) =>
+        Seq((l, r), (r, l))
+    }.groupBy(_._1).map {
+      case (k, v) => (k, v.map(_._2))
+    }
     // 初始化每个顶点的度
     val degrees = new Array[Int](len)
     for (e <- edges) {
@@ -141,13 +153,14 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     var alone = false
     while (!alone) {
       alone = true
-      for (i <- 0 to len - 1 if degrees(i) > 0) {
-        if (degrees(i) == 1) {
-          alone = false
-        }
-        degrees(i) -= 1
+      for (i <- 0 to len - 1 if degrees(i) == 1) {
+        degrees(i) = 0
+        alone = false
+        for (neighbor <- neighbors(i) if degrees(neighbor) > 0) degrees(neighbor) -= 1
       }
     }
-    (0 to len - 1).filter(i => degrees(i) > 0)
+    val circle = (0 to len - 1).filter(i => degrees(i) > 0)
+    assert(circle.length > 2, s"edges: ${edges.map(x => s"(${x._1}, ${x._2})").mkString(",")}, circle: ${circle.mkString(",")}")
+    circle
   }
 }

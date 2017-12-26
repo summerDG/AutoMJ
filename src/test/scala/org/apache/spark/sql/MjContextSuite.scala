@@ -11,9 +11,10 @@ import org.pasalab.automj.MjConfigConst
 class MjContextSuite extends SharedSQLContext{
   test("strategy test") {
     val conf = sparkContext.getConf
-    conf.set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
-    conf.set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
-    conf.set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+      .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
+      .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
+      .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
+      .set(MjConfigConst.ONE_ROUND_ONCE, "true")
     val mjSession = new MjSession(sparkContext)
     val optimizer = mjSession.sessionState.optimizer.extendedOperatorOptimizationRules.head
 

@@ -10,11 +10,6 @@ import org.apache.spark.sql.test.SharedSQLContext
  */
 class MultiJoinSuite extends QueryTest with SharedSQLContext{
   setupTestData()
-  test("get statistics") {
-    val node: LogicalPlan = catalog.lookupRelation(TableIdentifier("a")).children.head
-    val statistics = node.stats(sqlConf)
-    assert(false, s"Type: ${node.getClass.getName} size: ${statistics.sizeInBytes}, rowCount: ${statistics.rowCount}, attributeCols: ${statistics.attributeStats}")
-  }
   test("triangle data correctness test(one round)") {
     withSQLConf(MjConfigConst.Force_ONE_ROUND -> "true",
       MjConfigConst.JOIN_DEFAULT_SIZE -> "100"){
@@ -37,10 +32,11 @@ class MultiJoinSuite extends QueryTest with SharedSQLContext{
   test("line data correctness test") {
     withSQLConf(MjConfigConst.JOIN_DEFAULT_SIZE -> "12") {
       checkAnswer(sql("SELECT * FROM al, b, c, dl where al.x = b.x AND b.y = c.y AND c.z = dl.z"), expectedLine())
+//      sql("SELECT * FROM al, b, c, dl where al.x = b.x AND b.y = c.y AND c.z = dl.z").show(12)
     }
   }
   test("arbitrary data correctness test") {
-    withSQLConf(MjConfigConst.JOIN_DEFAULT_SIZE -> "72") {
+    withSQLConf(MjConfigConst.JOIN_DEFAULT_SIZE -> "100") {
       checkAnswer(sql("SELECT * FROM a, b, c , da, ea, fa, g, h, i, j " +
         "where a.x = b.x AND b.y = c.y AND c.z = a.z AND a.z = da.z AND da.p = ea.p AND ea.q = fa.q AND fa.s = g.s " +
         "AND b.y = h.y AND h.r = i.r AND i.w = j.w"), expectedArbitrary())
