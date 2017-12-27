@@ -5,7 +5,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.serializer.Serializer
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, BindReferences, Expression, SortOrder, SortPrefix, UnsafeProjection}
-import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartitioning}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, UnknownPartitioning}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.pasalab.automj.HcPartitioning
@@ -23,7 +23,7 @@ case class ShareExchange(partitioning: HcPartitioning,
 
   var postPartitioning: Partitioning = null
   override def outputPartitioning: Partitioning =
-    if (postPartitioning != null) postPartitioning else UnknownPartitioning(partitioning.numPartitions)
+    if (postPartitioning != null) postPartitioning else HashPartitioning(projExprs, partitioning.numPartitions)
   private def prepareShuffleDependency(): ShuffleDependency[Int, InternalRow, InternalRow] = {
     val serializer = new UnsafeRowSerializer(child.output.size, longMetric("dataSize"))
     ShareExchange.prepareShuffleDependency(child.execute(), child.output,

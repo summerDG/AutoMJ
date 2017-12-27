@@ -1,7 +1,7 @@
 package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Add, And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, ShareJoin}
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -23,10 +23,16 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
       val multiRoundCore = multiRoundStrategy.get
       val joinSizeEstimatorCore = joinSizeEstimator.get
       val forceOneRound = conf.getBoolean(MjConfigConst.Force_ONE_ROUND, false)
-      conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
+//      conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
       plan transform {
         case MjExtractor(keysEachRelation,
-        originBothKeysEachCondition, otherConditions, relations) =>
+        originBothKeysEachCondition, otherConditions, relations) if(conf.getBoolean(MjConfigConst.ONE_ROUND_ONCE, false)) =>
+//          assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
+//            s"joins: ${originBothKeysEachCondition.map {
+//              case ((l, r), (lk, rk)) =>
+//                s"($l, $r)->[(${lk.mkString(",")}), (${rk.mkString(",")})]"
+//            }.mkString("\n")}\n" +
+//            s"other: ${otherConditions.mkString(",")}")
           // 找出查询结构中的环
           val circle: Seq[Int] = findCircle(originBothKeysEachCondition.toSeq.map(_._1), relations.length)
 
@@ -39,15 +45,18 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           val (oneRoundKeys, oneRoundRelations) = circle
             .map(rId => (keysEachRelation(rId).filter(keys), relations(rId))).unzip
           val idMap = circle.zipWithIndex.toMap
-          val oneRoundCondition = tmpOneRoundCondition.map {
+//          assert(false, s"idMap: ${idMap.map {case (k, v) => s"$k -> $v"}.mkString("\n")}")
+          val oneRoundJoins = tmpOneRoundCondition.map {
             case ((l, r), v) =>
+              assert(idMap.contains(l), s"idMap: ${idMap.map {case (k, v) => s"$k -> $v"}.mkString("\n")}")
+              assert(idMap.contains(r), s"idMap: ${idMap.map {case (k, v) => s"$k -> $v"}.mkString("\n")}")
               ((idMap(l), idMap(r)), v)
           }
 
-          val oneRoundJoins= oneRoundCondition.map {
-            case ((l, r), v) =>
-              (idMap(l), idMap(r)) -> v
-          }
+//          val oneRoundJoins= oneRoundCondition.map {
+//            case ((l, r), v) =>
+//              (idMap(l), idMap(r)) -> v
+//          }
           val useOneRound: Boolean = if (oneRoundRelations.nonEmpty) {
             oneRoundCore.refresh(oneRoundKeys, oneRoundJoins, oneRoundRelations, 8)
             joinSizeEstimatorCore.refresh(oneRoundJoins, oneRoundRelations)
@@ -75,7 +84,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           // 每个branch表示(join分支, 和shareJoin连接的条件)
           // 如果没有环, 那么branches就是长度就为1
           val branches = if (multiRoundCondition.nonEmpty) {
-            Graph(multiRoundCondition.map(_._1).toSeq).connectComponent().map {
+            Graph(multiRoundCondition.toSeq.map(_._1)).connectComponent().map {
               case nodes =>
                 val set = nodes.map(_.v).toSet
                 val branchMap = multiRoundCondition.filter {
@@ -108,7 +117,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 
           // 合并一轮Join节点和多轮Join的节点
           val j: LogicalPlan = if (useOneRound) {
-            assert(branches.length > 0, "when use one round strategy, the plan must have at least 1 branch")
+//            assert(branches.length > 0, "when use one round strategy, the plan must have at least 1 branch")
             val oneRound: LogicalPlan = oneRoundCore.optimize()
             branches.foldLeft(oneRound) {
               case (pre, branch) =>
@@ -116,10 +125,13 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
             }
           } else {
             // 因为没有环，所以这张图是联通的
+            assert(branches.length == 1, s"branches(${branches.length})")
             branches.head._1
           }
+          conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
 
           // 如果多轮Join之后还有条件谓词，就加个过滤器
+//          assert(false, s"plan: $j, otherCondition: ${otherConditions.isEmpty}")
           if (otherConditions.isEmpty) j
           else {
             val filterCondition = otherConditions.reduce((l, r) => And(l, r))
@@ -160,7 +172,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
       }
     }
     val circle = (0 to len - 1).filter(i => degrees(i) > 0)
-    assert(circle.length > 2, s"edges: ${edges.map(x => s"(${x._1}, ${x._2})").mkString(",")}, circle: ${circle.mkString(",")}")
+//    assert(circle.length > 2, s"edges: ${edges.map(x => s"(${x._1}, ${x._2})").mkString(",")}, circle: ${circle.mkString(",")}")
     circle
   }
 }

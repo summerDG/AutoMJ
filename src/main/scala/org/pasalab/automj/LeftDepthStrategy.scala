@@ -1,6 +1,8 @@
 package org.pasalab.automj
+import joinery.DataFrame.JoinType
+import org.apache.spark.SampleStat
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Add, And, EqualTo, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
 import org.apache.spark.sql.internal.SQLConf
@@ -32,42 +34,50 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
     }
     var currentVertices:Array[Int] = Array[Int](firstId)
 
-    var join: LogicalPlan = relations(firstId)
+    var join: LogicalPlan = null
 
-    def generateJoin(v: Int, n: Int, plan: LogicalPlan): Unit = {
-      val (left, right) = joinConditions((v, n))
-      val condition: Expression = left.zip(right).map {
-        case (l, r) => EqualTo(l, r).asInstanceOf[Expression]
-      }.reduce((l, r) => And(l, r))
-      join = Join(join, plan, Inner, Some(condition))
+    def generateJoin(r: Int): Unit = {
+      val plan = relations(r)
+
+      if (join == null) {
+        join = plan
+      } else {
+        val conditions = scanned.flatMap {
+          case l if (joinConditions.contains(l, r) || joinConditions.contains(r, l))=>
+            if ((l < r && !marked.contains((l, r)) || (l >= r && !marked.contains(r, l)))) {
+              if (l < r) marked.add((l, r))
+              else marked.add(r, l)
+              val (left, right) =
+                if (joinConditions.contains((l, r))) {
+                  joinConditions((l, r))
+                } else {
+                  val (a, b) = joinConditions((r, l))
+                  (b, a)
+                }
+              Some(left.zip(right).map (x => EqualTo(x._1, x._2).asInstanceOf[Expression]).reduce(And(_,_)))
+            }
+            else None
+          case _ => None
+        }
+//        assert(r != 2, s"${conditions.mkString(",")}, left:${join}, right: ${plan}")
+        assert(conditions.nonEmpty, s"conditions is empty, scanned: ${scanned.mkString(",")}, r: $r")
+        join = Join(join, plan, Inner, Some(conditions.reduce(And(_,_))))
+      }
     }
 
     while (!currentVertices.isEmpty) {
       val newVertices: mutable.ArrayBuffer[Int] = mutable.ArrayBuffer[Int]()
-
       for (v <- currentVertices) {
-        scanned.add(v)
+        generateJoin(v)
+        scanned += v
         val neighbourhood = edges(v).filter{
           case x =>
-            if  (v < x) {
-              !marked(v, x)
-            } else !marked(x, v)
+            !scanned.contains(x)
         }
-
-        for (n <- neighbourhood) {
-          assert(joinConditions.contains((v, n))|| joinConditions.contains((n, v)), "construct graph problem")
-          if (joinConditions.contains((v, n))) {
-            generateJoin(v, n, relations(n))
-          } else {
-            generateJoin(n, v, relations(n))
-          }
-          if (v < n) marked.add((v, n))
-          else marked.add((n, v))
-        }
-        newVertices ++= neighbourhood.filter(x => !scanned.contains(x))
+        newVertices ++= neighbourhood
       }
 
-      currentVertices = newVertices.toArray
+      currentVertices = newVertices.filter(x => !scanned.contains(x)).toSet.toArray
     }
     join
   }

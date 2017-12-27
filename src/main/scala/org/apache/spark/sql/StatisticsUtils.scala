@@ -66,7 +66,7 @@ object StatisticsUtils {
     val sample: joinery.DataFrame[Any] = new joinery.DataFrame[Any](cols:_*)
     parts.flatMap(i => i.sample).collect().foreach {
       case r =>
-        val list = java.util.Arrays.asList(r.toSeq.toArray)
+        val list = java.util.Arrays.asList(cols.map(f => r.getAs[Any](f)))
         sample.append(list)
     }
 

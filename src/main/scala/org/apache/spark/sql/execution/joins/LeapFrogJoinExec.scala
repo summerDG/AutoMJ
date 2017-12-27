@@ -3,14 +3,14 @@ package org.apache.spark.sql.execution.joins
 import org.apache.spark.rdd.{RDD, ZippedPartitionsRDDs}
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, Projection, UnsafeProjection}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, Partitioning, PartitioningCollection}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.execution.{RowIterator, SparkPlan}
 import org.apache.spark.sql.types.{DataType, Decimal}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
 import org.apache.spark.util.collection.CompactBuffer
-import org.pasalab.automj.{AttributeVertex, Node}
+import org.pasalab.automj.{AttributeVertex, HcPartitioning, Node}
 
 import scala.collection.mutable.ArrayBuffer
 
@@ -41,8 +41,10 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
   override def outputPartitioning: Partitioning = PartitioningCollection(relations.map(_.outputPartitioning))
   /** The distributions are used to generate puppet partitioning for child HC echange node. */
   override def requiredChildDistribution: Seq[Distribution] =
-  keysEachRelation
-    .foldRight(List[Distribution]())((keys, s) => ClusteredDistribution(keys) :: s)
+  keysEachRelation.map {
+    case exprs =>
+      UnspecifiedDistribution
+  }
 
   def outputNewPartitioning: Partitioning = PartitioningCollection(relations.map(_.outputPartitioning))
 
@@ -183,7 +185,7 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
     }
   }
 
-  override def children: Seq[SparkPlan] = children
+  override def children: Seq[SparkPlan] = relations
 }
 
 

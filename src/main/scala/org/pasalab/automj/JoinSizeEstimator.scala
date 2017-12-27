@@ -12,18 +12,11 @@ import org.apache.spark.sql.internal.SQLConf
  */
 abstract class JoinSizeEstimator(catalog: MjSessionCatalog, conf: SQLConf) {
   protected var p: Double = 1
-  protected var joinConditions: Map[(Int, Int), Column] = null
+  protected var joinConditions: Map[(Int, Int), (Seq[Expression], Seq[Expression])] = null
   protected var relations: Seq[LogicalPlan] = null
   def refresh(joins:Map[(Int, Int), (Seq[Expression], Seq[Expression])],
               tables: Seq[LogicalPlan]): Unit = {
-    joinConditions = joins.map {
-      case (k, (lk, rk)) =>
-        val expr = lk.zip(rk).map{
-          case (l, r) =>
-            EqualTo(l, r).asInstanceOf[Expression]
-        }.reduce((a, b) => And(a, b))
-        (k, new Column(expr))
-    }
+    joinConditions = joins
     relations = tables
   }
   protected def costCore: BigInt

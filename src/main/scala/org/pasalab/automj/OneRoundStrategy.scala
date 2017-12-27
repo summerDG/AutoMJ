@@ -3,7 +3,7 @@ package org.pasalab.automj
 import org.apache.spark.MjStatistics
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.KeysAndTableId
 import org.apache.spark.sql.execution.joins.ExpressionAndAttributes
@@ -37,10 +37,10 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extend
     otherCondition = conditions
     val partitionNum = partitions
 
-    val initEdges = bothKeysEachCondition.map {
+    val initEdges = bothKeysEachCondition.toSeq.map {
       case ((l, r), (lk, rk)) =>
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
-    }.toSeq
+    }
     val equivalenceClasses = Graph(initEdges).connectComponent()
     assert(equivalenceClasses.forall(_.nonEmpty),
       s"equivalenceClasses(${equivalenceClasses.length})," +
@@ -48,14 +48,22 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extend
 
     val statistics: Seq[MjStatistics] = relations.flatMap(x => catalog.getStatistics(x))
     assert(statistics.length == relations.length, s"some relation has no statistics(${statistics.length})")
+//    assert(false, s"${equivalenceClasses.zipWithIndex.map {
+//      case (s, num) =>
+//        s"$num. ${s.map(n => s"relation: ${n.v.rId}, exprs: ${n.v.k.mkString(",")}")}"
+//    }.mkString("\n")
+//    }\n conditions: ${bothKeysEachCondition.map{
+//      case ((l, r), (lk, rk)) =>
+//        s"($l, $r)->($lk, $rk)"
+//    }.mkString("\n")}")
 
-    val exprToCid: Map[ExprId, Int] = equivalenceClasses.zipWithIndex.flatMap {
+    val exprToCid: Map[Long, Int] = equivalenceClasses.zipWithIndex.flatMap {
       case (nodes, cId) =>
         nodes.flatMap {
           case node =>
             node.v.k.map {
-              case e: AttributeReference =>
-                (e.exprId, cId)
+              case e: NamedExpression =>
+                (e.exprId.id, cId)
             }
         }
     }.toMap

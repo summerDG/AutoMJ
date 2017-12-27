@@ -1,7 +1,7 @@
 package org.pasalab.automj
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.{Attribute, EqualTo, Expression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, EqualTo, Expression, NamedExpression, PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.InnerLike
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, Project}
 
@@ -76,13 +76,27 @@ object MjExtractor extends Logging with PredicateHelper {
         }
         m.toMap
       }
-      val keys = new Array[Seq[Expression]](items.size)
+      val keys = new Array[Seq[Expression]](items.size).map(_ => Seq[Expression]())
       for (((l, r), (lk, rk)) <- joins) {
-        keys(l) ++= lk
-        keys(r) ++= rk
+        keys(l) ++= {
+          val covered = keys(l).find(old => lk.find(k => k.semanticEquals(old)).isDefined)
+          covered match {
+            case None => lk
+            case _ => Seq[Expression]()
+          }
+        }
+        keys(r) ++= {
+          val covered = keys(r).find(old => rk.find(k => k.semanticEquals(old)).isDefined)
+          covered match {
+            case None => rk
+            case _ => Seq[Expression]()
+          }
+        }
       }
       Some((keys.toSeq, joins, otherConditions, items))
-    } else None
+    } else {
+      None
+    }
   }
 
   def extractInnerJoins(plan: LogicalPlan): (Seq[LogicalPlan], Set[Expression]) = {

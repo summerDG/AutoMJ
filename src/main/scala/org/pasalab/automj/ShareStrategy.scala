@@ -36,13 +36,13 @@ case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneR
   override def attrOptimization(closureLength: Int,
                                 relations: Seq[LogicalPlan],
                                 statistics: Seq[MjStatistics],
-                                exprToCid: Map[ExprId, Int]): Array[Seq[KeysAndTableId]] = {
+                                exprToCid: Map[Long, Int]): Array[Seq[KeysAndTableId]] = {
     val orderedNodes = statistics.zipWithIndex.flatMap {
       case (child, id) =>
         val keys = relations(id).output
         keys.map {
           case e: AttributeReference =>
-            val cId = exprToCid(e.exprId)
+            val cId = exprToCid(e.exprId.id)
             assert(child.attributeStats.nonEmpty, s"attributeStates is empty!!!!(size: ${child.sizeInBytes}, count: ${child.rowCount})")
             val card = child.attributeStats.get(e).get.distinctCount
             (e, cId, card, id)

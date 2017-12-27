@@ -12,5 +12,5 @@ trait AttributesOrder {
   def attrOptimization(closureLength: Int,
                        relations: Seq[LogicalPlan],
                        statistics: Seq[MjStatistics],
-                       exprToCid: Map[ExprId, Int]): Array[Seq[KeysAndTableId]]
+                       exprToCid: Map[Long, Int]): Array[Seq[KeysAndTableId]]
 }
