@@ -3,7 +3,7 @@ package org.apache.spark.sql.catalyst.optimizer
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.catalyst.expressions.{Add, And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, ShareJoin}
+import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.pasalab.automj._
 
@@ -131,11 +131,11 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
 
           // 如果多轮Join之后还有条件谓词，就加个过滤器
-//          assert(false, s"plan: $j, otherCondition: ${otherConditions.isEmpty}")
-          if (otherConditions.isEmpty) j
+//          assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
+          if (otherConditions.isEmpty) Project(plan.output, j)
           else {
             val filterCondition = otherConditions.reduce((l, r) => And(l, r))
-            Filter(filterCondition, j)
+            Project(plan.output, Filter(filterCondition, j))
           }
       }
     } else plan

@@ -3,6 +3,9 @@ package org.pasalab.automj
 import org.apache.spark.sql.catalyst.expressions.{Add, Expression, Literal, Multiply, Murmur3Hash, Pmod, Unevaluable}
 import org.apache.spark.sql.types.{ArrayType, DataType, IntegerType}
 
+import scala.collection.immutable.IndexedSeq
+import scala.collection.mutable
+
 /**
  * Created by wuxiaoqi on 17-12-5.
  */
@@ -48,35 +51,78 @@ case class HcPartitioning(expressions: Seq[Expression],
     (exprs, ids)
   }
 
+  def enumCombines(dims: Seq[Int], combines: mutable.ArrayBuffer[Seq[Int]], pre: Seq[Int]): Unit = {
+    val level = pre.length
+    if (level < dims.length) {
+      for (i <- 0 to dims(level) - 1) {
+        enumCombines(dims, combines, pre:+i)
+      }
+    } else {
+      combines += pre
+    }
+  }
+
+  def partitionId(coordinate: Array[Expression], factors: Array[Int]): Expression = {
+    assert(coordinate.length == factors.length, s"coordinate(${coordinate.length}), factors(${factors.length})")
+    var id: Expression = null
+    for (i <- 0 to factors.length - 1) {
+      val cur = Multiply(coordinate(i),Literal(factors(i)))
+      if (id == null) {
+        id = cur
+      } else {
+        id = Add(id, cur)
+      }
+    }
+    id
+  }
   /**
    * Returns an expression that will produce a valid partition ID(i.e. non-negative and is less
    * than numPartitions) based on hashing expressions.
    */
   def partitionIdExpression: Seq[Expression] = {
-    //    Pmod(new Murmur3Hash(expressions), Literal(4)) :: Nil
     val (hashNumbers, dimIds) = computeExpressionToIds()
-    var i = 0
-    val dims = new Array[Int](shares.length)
-    while (i < shares.length) {
-      if (i == 0) dims(i) = numPartitions / shares(i)
-      else dims(i) = dims(i - 1) / shares(i)
-      i += 1
+    var len = 1
+    for (i <- dimIds) {
+      len *= shares(i)
     }
 
-    val nonStar = hashNumbers.zip(dimIds).map {
-      case (hash, index) =>
-        Multiply(hash, Literal(dims(index)))
-    }.fold(Literal(0))((x, y) => Add(x, y))
-    if (shares.length - hashNumbers.length > 0) {
-      val usedDims = dimIds.toSet
-      dims.zipWithIndex.filterNot(t => usedDims.contains(t._2))
-        .flatMap{
-          case (range, index) =>
-            (0 until shares(index)).map( i => Add(Literal(i * range), nonStar))
-        }
-    } else {
-      nonStar :: Nil
+    val factors = new Array[Int](shares.length)
+
+    var i = shares.length - 1
+
+    while (i >= 0) {
+      factors(i) = if (i + 1 < shares.length) factors(i + 1) * shares(i + 1) else 1
+      i -= 1
     }
+
+    val combines = mutable.ArrayBuffer[Seq[Int]]()
+    val nonStarDims: IndexedSeq[Int] = (0 to shares.length - 1).filter(x => !dimIds.contains(x)).map(x => shares(x))
+    enumCombines(nonStarDims, combines, Seq[Int]())
+
+    val coordinates: Array[Array[Expression]] = combines.map {
+      case s: Seq[Int] =>
+        assert(s.length + dimIds.length == shares.length, s"s(${s.length}), dimIds:${dimIds.length}")
+        val t = new Array[Expression](shares.length)
+        var a = 0
+        var b = 0
+//        var max = 0
+        for (i <- 0 to shares.length - 1 if (a < dimIds.length || b < s.length)) {
+          if (a < dimIds.length && dimIds(a) == i) {
+            t(i) = hashNumbers(a)
+//            max += (shares(i) - 1) * factors(i)
+            a += 1
+          } else {
+            t(i) = Literal(s(b))
+//            max += s(b) * factors(i)
+            b += 1
+          }
+        }
+//        assert(max < numPartitions, s"max: ${max}")
+        t
+    }.toArray
+
+//    assert(false, s"coordinates: ${coordinates.map (_.mkString(",")).mkString("\n")}")
+    coordinates.map(c => partitionId(c, factors))
   }
 }
 case class HcDistribution(clustering: Seq[Expression],
