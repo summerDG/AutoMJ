@@ -38,6 +38,8 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
       .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
       .set(MjConfigConst.ONE_ROUND_ONCE, "true")
       .set(MjConfigConst.SAMPLE_FRACTION, "1.0")
+      .set(MjConfigConst.ONE_ROUND_PARTITIONS, "8")
+      .set(MjConfigConst.EXECUTION_MODE, "mixed")
   }
 
   /**
