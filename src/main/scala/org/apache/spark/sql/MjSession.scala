@@ -18,7 +18,7 @@ class MjSession private(
                          @transient private val parentSessionState: Option[SessionState],
                          @transient override private[sql] val extensions: SparkSessionExtensions)
   extends SparkSession(sparkContext) { self =>
-  private[sql] def this(sc: SparkContext) {
+  def this(sc: SparkContext) {
     this(sc, None, None, MjSession.newExtensions())
   }
   @InterfaceStability.Unstable
