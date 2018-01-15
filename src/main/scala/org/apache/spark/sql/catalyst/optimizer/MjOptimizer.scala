@@ -17,8 +17,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                        joinSizeEstimator: Option[JoinSizeEstimator] = None,
                        conf: SparkConf) extends Rule[LogicalPlan]{
   override def apply(plan: LogicalPlan): LogicalPlan = {
-    if (conf.getBoolean(MjConfigConst.ONE_ROUND_ONCE, false) &&
-      oneRoundStrategy.isDefined && multiRoundStrategy.isDefined && joinSizeEstimator.isDefined) {
+    if (oneRoundStrategy.isDefined && multiRoundStrategy.isDefined && joinSizeEstimator.isDefined) {
       val oneRoundCore = oneRoundStrategy.get
       val multiRoundCore = multiRoundStrategy.get
       val joinSizeEstimatorCore = joinSizeEstimator.get
@@ -30,11 +29,11 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         case "default" =>
           plan
         case "one-round" =>
-          oneRoundMode(oneRoundCore)(plan)
+          oneRoundMode(oneRoundCore, conf)(plan)
         case "mixed" =>
-          mixedMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound)(plan)
+          mixedMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, conf)(plan)
       }
-      conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
+
       r
     } else plan
   }
@@ -42,16 +41,16 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
   def mixedMode(oneRoundCore: OneRoundStrategy,
                 multiRoundCore: MultiRoundStrategy,
                 joinSizeEstimatorCore: JoinSizeEstimator,
-                forceOneRound: Boolean)(plan: LogicalPlan): LogicalPlan = {
+                forceOneRound: Boolean, conf: SparkConf)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
       case MjExtractor(keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations) if (conf.getBoolean(MjConfigConst.ONE_ROUND_ONCE, false)) =>
-        //          assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
-        //            s"joins: ${originBothKeysEachCondition.map {
-        //              case ((l, r), (lk, rk)) =>
-        //                s"($l, $r)->[(${lk.mkString(",")}), (${rk.mkString(",")})]"
-        //            }.mkString("\n")}\n" +
-        //            s"other: ${otherConditions.mkString(",")}")
+//        assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
+//          s"joins: ${originBothKeysEachCondition.map {
+//            case ((l, r), (lk, rk)) =>
+//              s"($l, $r)->[(${lk.mkString(",")}), (${rk.mkString(",")})]"
+//          }.mkString("\n")}\n" +
+//          s"other: ${otherConditions.mkString(",")}")
         // 找出查询结构中的环
         val circle: Seq[Int] = findCircle(originBothKeysEachCondition.toSeq.map(_._1), relations.length)
 
@@ -144,6 +143,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           assert(branches.length == 1, s"branches(${branches.length})")
           branches.head._1
         }
+        conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
 
         // 如果多轮Join之后还有条件谓词，就加个过滤器
         //          assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
@@ -155,7 +155,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     }
   }
 
-  def oneRoundMode(oneRoundCore: OneRoundStrategy)(plan: LogicalPlan): LogicalPlan = {
+  def oneRoundMode(oneRoundCore: OneRoundStrategy, conf: SparkConf)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
       case MjExtractor(keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations) if (conf.getBoolean(MjConfigConst.ONE_ROUND_ONCE, false)) =>
@@ -172,6 +172,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         // 合并一轮Join节点和多轮Join的节点
         val j: LogicalPlan = oneRoundCore.optimize()
 
+        conf.set(MjConfigConst.ONE_ROUND_ONCE, "false")
         // 如果多轮Join之后还有条件谓词，就加个过滤器
         //          assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
         if (otherConditions.isEmpty) Project(plan.output, j)

@@ -1,7 +1,7 @@
 package org.pasalab.automj
 
 import org.apache.spark.internal.Logging
-import org.apache.spark.sql.catalyst.expressions.{Attribute, EqualTo, Expression, NamedExpression, PredicateHelper}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, EqualTo, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.plans.InnerLike
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, Project}
 
