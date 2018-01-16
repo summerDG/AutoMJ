@@ -1,6 +1,7 @@
 package org.apache.spark.sql.execution
 
-import org.apache.spark.sql.Strategy
+import org.apache.spark.SparkConf
+import org.apache.spark.sql.{SQLContext, Strategy}
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Expression, PredicateHelper, SortOrder}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin}
@@ -12,51 +13,54 @@ import org.pasalab.automj._
 /**
  * Created by wuxiaoqi on 17-12-4.
  */
-case class ShareJoinSelection(conf: SQLConf) extends Strategy
+case class ShareJoinSelection(sqlConf: SQLConf) extends Strategy
   with PredicateHelper{
-  override def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
-    case ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition,
-    conditions, numShufflePartitions, shares, dimensionToExprs, closures) =>
-      val children: Seq[SparkPlan] = relations.map(n => planLater(n))
+  override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
+//    sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "true")
+    plan match {
+      case ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition,
+      conditions, numShufflePartitions, shares, dimensionToExprs, closures) =>
+        val children: Seq[SparkPlan] = relations.map(n => planLater(n))
 
-      val partitionings: Seq[HcPartitioning] = reorderedKeysEachTable.map {
-        case exprs =>
-          HcPartitioning(exprs, numShufflePartitions,
-            dimensionToExprs.map(_.flatMap(_.keys)), shares)
-      }
+        val partitionings: Seq[HcPartitioning] = reorderedKeysEachTable.map {
+          case exprs =>
+            HcPartitioning(exprs, numShufflePartitions,
+              dimensionToExprs.map(_.flatMap(_.keys)), shares)
+        }
 
-      val exchanges: Seq[ShareExchange] = for (i <- 0 to relations.length - 1) yield {
-        ShareExchange(partitionings(i), reorderedKeysEachTable(i), children(i))
-      }
+        val exchanges: Seq[ShareExchange] = for (i <- 0 to relations.length - 1) yield {
+          ShareExchange(partitionings(i), reorderedKeysEachTable(i), children(i))
+        }
 
-      val requiredOrderings = partitionings.map(_.expressions.map(SortOrder(_, Ascending)))
-      val childrenWithSorter: Seq[SparkPlan] = exchanges.zip(requiredOrderings).map {
-        case (child, requiredOrdering) =>
-          if (requiredOrdering.nonEmpty) {
-            val orderingMatched = if (requiredOrdering.length > child.outputOrdering.length) {
-              false
-            } else {
-              requiredOrdering.zip(child.outputOrdering).forall{
-                case (requiredOrder, childOutputOrder) =>
-                  childOutputOrder.satisfies(requiredOrder)
+        val requiredOrderings = partitionings.map(_.expressions.map(SortOrder(_, Ascending)))
+        val childrenWithSorter: Seq[SparkPlan] = exchanges.zip(requiredOrderings).map {
+          case (child, requiredOrdering) =>
+            if (requiredOrdering.nonEmpty) {
+              val orderingMatched = if (requiredOrdering.length > child.outputOrdering.length) {
+                false
+              } else {
+                requiredOrdering.zip(child.outputOrdering).forall{
+                  case (requiredOrder, childOutputOrder) =>
+                    childOutputOrder.satisfies(requiredOrder)
+                }
               }
-            }
-            if (!orderingMatched) {
-              SortExec(requiredOrdering, global = false, child = child)
+              if (!orderingMatched) {
+                SortExec(requiredOrdering, global = false, child = child)
+              } else {
+                child
+              }
             } else {
               child
             }
-          } else {
-            child
-          }
-      }
+        }
 
-      LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
-        conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
-    case _ => Nil
+        LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
+          conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
+      case _ => Nil
+    }
   }
 
-  def defaultNumPreShufflePartitions: Int = conf.numShufflePartitions
+  def defaultNumPreShufflePartitions: Int = sqlConf.numShufflePartitions
 
 }
 case class KeysAndTableId(keys: Seq[Expression], tableId: Int) {

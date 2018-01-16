@@ -54,6 +54,10 @@ class MjSession private(
     result.sessionState // force copy of SessionState
     result
   }
+  override def sql(sqlText: String): DataFrame = {
+    sqlContext.setConf(MjConfigConst.ONE_ROUND_ONCE, "true")
+    super.sql(sqlText)
+  }
 }
 object MjSession {
   private def instantiateSessionState(sparkSession: SparkSession): SessionState = {
@@ -77,14 +81,14 @@ object MjSession {
           .map(c => Class.forName(c).getConstructors.head.newInstance(catalog, sqlConf).asInstanceOf[JoinSizeEstimator])
 
         val optimizer: MjOptimizer = MjOptimizer(oneRoundStrategy,
-          multiRoundStrategy, joinSizeEstimator, sparkConf)
+          multiRoundStrategy, joinSizeEstimator,
+          sparkConf.getBoolean(MjConfigConst.Force_ONE_ROUND, false), sqlConf)
         optimizer
     }
     // 增添新物理优化策略
     extensions.injectPlannerStrategy {
       session =>
-        val sparkConf = session.sqlContext.conf
-        ShareJoinSelection(sparkConf)
+        ShareJoinSelection(session.sqlContext.conf)
     }
     extensions
   }

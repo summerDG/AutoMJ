@@ -36,7 +36,6 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
       .set(MjConfigConst.ONE_ROUND_STRATEGY, "org.pasalab.automj.ShareStrategy")
       .set(MjConfigConst.MULTI_ROUND_STRATEGY, "org.pasalab.automj.LeftDepthStrategy")
       .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
-      .set(MjConfigConst.ONE_ROUND_ONCE, "true")
       .set(MjConfigConst.SAMPLE_FRACTION, "1.0")
       .set(MjConfigConst.ONE_ROUND_PARTITIONS, "8")
       .set(MjConfigConst.EXECUTION_MODE, "mixed")
@@ -63,7 +62,9 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
   protected implicit def sqlContext: SQLContext = _spark.sqlContext
 
   protected def createSparkSession: TestSparkSession = {
-    new TestSparkSession(sparkConf)
+    val x = new TestSparkSession(sparkConf)
+    x.sqlContext.setConf(MjConfigConst.ONE_ROUND_ONCE, "true")
+    x
   }
 
   /**
