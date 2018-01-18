@@ -16,7 +16,6 @@ import org.pasalab.automj._
 case class ShareJoinSelection(sqlConf: SQLConf) extends Strategy
   with PredicateHelper{
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-//    sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "true")
     plan match {
       case ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition,
       conditions, numShufflePartitions, shares, dimensionToExprs, closures) =>
@@ -54,6 +53,7 @@ case class ShareJoinSelection(sqlConf: SQLConf) extends Strategy
             }
         }
 
+        logInfo(s"[POS]entering ShareJoinSelection, ${sqlConf.getConfString(MjConfigConst.EXECUTION_MODE)}")
         LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
           conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
       case _ => Nil

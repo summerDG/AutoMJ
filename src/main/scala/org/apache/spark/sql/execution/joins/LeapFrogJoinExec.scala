@@ -69,6 +69,8 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
   // TODO: Have to modify doExecute only for inner join
   protected override def doExecute(): RDD[InternalRow] = {
     val numOutputRows = longMetric("numOutputRows")
+//    assert(false, "entering LeapFrog")
+    logInfo(s"[POS]LeapFrog do execute")
 
     ZippedPartitionsRDDs(sparkContext, relations.head.execute(), relations.tail.map(_.execute())) {
       iterators =>

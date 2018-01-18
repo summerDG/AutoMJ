@@ -30,9 +30,9 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         case "default" =>
           plan
         case "one-round" =>
-          oneRoundMode(oneRoundCore, sqlConf)(plan)
+          oneRoundMode(oneRoundCore)(plan)
         case "mixed" =>
-          mixedMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, sqlConf)(plan)
+          mixedMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound)(plan)
       }
 
       r
@@ -42,7 +42,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
   def mixedMode(oneRoundCore: OneRoundStrategy,
                 multiRoundCore: MultiRoundStrategy,
                 joinSizeEstimatorCore: JoinSizeEstimator,
-                forceOneRound: Boolean, sQLConf: SQLConf)(plan: LogicalPlan): LogicalPlan = {
+                forceOneRound: Boolean)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
       case MjExtractor(keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)
@@ -75,7 +75,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 
         val useOneRound: Boolean = if (oneRoundRelations.nonEmpty) {
           oneRoundCore.refresh(oneRoundKeys, oneRoundJoins, oneRoundRelations,
-            sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "200").toInt)
+            sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt)
           joinSizeEstimatorCore.refresh(oneRoundJoins, oneRoundRelations)
           forceOneRound || oneRoundCore.cost() < joinSizeEstimatorCore.cost()
         } else {
@@ -136,6 +136,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         val j: LogicalPlan = if (useOneRound) {
           //            assert(branches.length > 0, "when use one round strategy, the plan must have at least 1 branch")
           val oneRound: LogicalPlan = oneRoundCore.optimize()
+          assert(oneRound.isInstanceOf[ShareJoin], s"not ShareJoin(${oneRound.getClass.getName})")
           branches.foldLeft(oneRound) {
             case (pre, branch) =>
               Join(pre, branch._1, Inner, branch._2)
@@ -157,7 +158,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     }
   }
 
-  def oneRoundMode(oneRoundCore: OneRoundStrategy, sqlConf: SQLConf)(plan: LogicalPlan): LogicalPlan = {
+  def oneRoundMode(oneRoundCore: OneRoundStrategy)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
       case MjExtractor(keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)
@@ -170,14 +171,14 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         //            s"other: ${otherConditions.mkString(",")}")
         // 找出查询结构中的环
         oneRoundCore.refresh(keysEachRelation, originBothKeysEachCondition, relations,
-          sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "200").toInt)
+          sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt)
 
         // 合并一轮Join节点和多轮Join的节点
         val j: LogicalPlan = oneRoundCore.optimize()
+        assert(j.isInstanceOf[ShareJoin], s"not ShareJoin(${j.getClass.getName})")
 
         sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
         // 如果多轮Join之后还有条件谓词，就加个过滤器
-        //          assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
         if (otherConditions.isEmpty) Project(plan.output, j)
         else {
           val filterCondition = otherConditions.reduce((l, r) => And(l, r))
