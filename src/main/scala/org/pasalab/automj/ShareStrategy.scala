@@ -39,11 +39,15 @@ case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneR
                                 exprToCid: Map[Long, Int]): Array[Seq[KeysAndTableId]] = {
     val orderedNodes = statistics.zipWithIndex.flatMap {
       case (child, id) =>
-        val keys = relations(id).output
+        val keys = relations(id).output.filter {
+          case a: AttributeReference =>
+            exprToCid.contains(a.exprId.id)
+        }
         keys.map {
           case e: AttributeReference =>
             val cId = exprToCid(e.exprId.id)
             assert(child.attributeStats.nonEmpty, s"attributeStates is empty!!!!(size: ${child.sizeInBytes}, count: ${child.rowCount})")
+            logInfo(s"key: $e, attributes: ${child.attributeStats.keySet.mkString("[",",","]")}")
             val card = child.attributeStats.get(e).get.distinctCount
             (e, cId, card, id)
         }

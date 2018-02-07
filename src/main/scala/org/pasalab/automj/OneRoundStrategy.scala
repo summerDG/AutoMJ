@@ -181,7 +181,7 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extend
           }
         }
       }
-      logInfo(s"shares: ${novelShares}, partitions: $novel")
+      logInfo(s"shares: ${novelShares.mkString("[",",","]")}, partitions: $novel")
 
       (novelShares, novel)
     }
