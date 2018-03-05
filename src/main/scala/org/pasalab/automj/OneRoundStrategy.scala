@@ -1,6 +1,6 @@
 package org.pasalab.automj
 
-import org.apache.spark.MjStatistics
+import org.apache.spark.{MjStatistics, SampleStat}
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression, NamedExpression}
@@ -15,7 +15,7 @@ import scala.util.Random
 /**
  * Created by wuxiaoqi on 17-12-3.
  */
-abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extends AttributesOrder with Logging{
+abstract class OneRoundStrategy(val catalog: MjSessionCatalog, conf: SQLConf) extends AttributesOrder with Logging{
   protected var reorderedKeysEachTable: Seq[Seq[Expression]] = null
   protected var bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])] = null
   protected var relations: Seq[LogicalPlan] = null
@@ -25,8 +25,59 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extend
   protected var dimensionToExprs: Array[Seq[KeysAndTableId]] = null
   protected var shares: Seq[Int] = null
   protected var closures: Seq[Seq[(ExpressionAndAttributes, Int)]] = null
+  protected var sizesInBytes: Seq[BigInt] = null
 
 
+  def loadArgument(joins:Map[(Int, Int), (Seq[Expression], Seq[Expression])],
+                   tables: Seq[LogicalPlan],
+                   sizes: Seq[Long],
+                   samples: Seq[SampleStat[Any]],
+                   partitions: Int): Unit = {
+    bothKeysEachCondition = joins
+    relations = tables
+    val partitionNum = partitions
+
+    val initEdges = bothKeysEachCondition.toSeq.map {
+      case ((l, r), (lk, rk)) =>
+        (AttributeVertex(l, lk), AttributeVertex(r, rk))
+    }
+    val equivalenceClasses = Graph(initEdges).connectComponent()
+    assert(equivalenceClasses.forall(_.nonEmpty),
+      s"equivalenceClasses(${equivalenceClasses.length})," +
+        s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
+    dimensionToExprs = attrOptimization(samples, equivalenceClasses)
+    assert(dimensionToExprs.forall(_.nonEmpty),
+      s"dimensionToExprs(${dimensionToExprs.length})," +
+        s" ${if (dimensionToExprs.forall(_.isEmpty)) "is all empty" else "has some empty"})")
+
+    val buffer = new Array[ArrayBuffer[Expression]](relations.length)
+      .map(_ => ArrayBuffer[Expression]())
+    for (dim <- dimensionToExprs; keysAndId <- dim) {
+      buffer(keysAndId.tableId) ++= keysAndId.keys
+    }
+    reorderedKeysEachTable = buffer.map(_.toSeq)
+
+    closures = dimensionToExprs.map {
+      case c =>
+        c.map {
+          case keysAndId =>
+            (ExpressionAndAttributes(keysAndId.keys, relations(keysAndId.tableId).output),
+              keysAndId.tableId)
+        }
+    }
+    val (s, n) = computeSharesAndPartitions(relations.length, closures, sizes, partitionNum)
+    sizesInBytes = sizes.zip(samples).map {
+      case (c, s) =>
+        val tupleSize = ByteArrayUtils.objectToBytes(s.sample.head) match {
+          case Some(bytes) =>
+            bytes.length
+          case _ => 0
+        }
+        BigInt(c * tupleSize)
+    }
+    shares = s
+    numShufflePartitions = n
+  }
   def refresh(keys: Seq[Seq[Expression]],
               joins:Map[(Int, Int), (Seq[Expression], Seq[Expression])],
               tables: Seq[LogicalPlan],
@@ -91,6 +142,7 @@ abstract class OneRoundStrategy(catalog: MjSessionCatalog, conf: SQLConf) extend
     }
     val predictedSizes: Seq[Long] = statistics.map(_.rowCount.get.toLong)
     val (s, n) = computeSharesAndPartitions(relations.length, closures, predictedSizes, partitionNum)
+    sizesInBytes = statistics.map(_.sizeInBytes)
     shares = s
     numShufflePartitions = n
   }

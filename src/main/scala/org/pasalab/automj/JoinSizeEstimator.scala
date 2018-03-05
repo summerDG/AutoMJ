@@ -1,6 +1,6 @@
 package org.pasalab.automj
 
-import joinery.DataFrame
+import org.apache.spark.SampleStat
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
@@ -19,6 +19,8 @@ abstract class JoinSizeEstimator(catalog: MjSessionCatalog, conf: SQLConf) {
     joinConditions = joins
     relations = tables
   }
+  def joinSample(condition: Map[(Int, Int), Option[Expression]],
+              samples: Seq[SampleStat[Any]]): SampleStat[Any]
   protected def costCore: BigInt
 
   def cost(): BigInt = {

@@ -1,0 +1,29 @@
+[36mDiscovery starting.[0m
+[36mDiscovery completed in 1 second, 39 milliseconds.[0m
+[36mRun starting. Expected test count is: 14[0m
+[32mMultiJoinSuite:[0m
+[32m- triangle data correctness test(one round)[0m
+[32m- triangle data correctness test(use cost model)[0m
+[32m- clique data correctness test[0m
+[32m- line data correctness test[0m
+[32m- arbitrary data correctness test[0m
+[32mOneRoundStrategySuite:[0m
+[32m- test refresh method[0m
+[32m- test cost model[0m
+[32mExecutionModeSuite:[0m
+[32m- execution mode (default)[0m
+[32m- execution mode (one-round)[0m
+[32m- execution mode (mixed)[0m
+[32mQueryTestSuite:[0m
+[32m- SPARK-16940: checkAnswer should raise TestFailedException for wrong results[0m
+[32mMultiRoundSuite:[0m
+[32m- left depth optimize method[0m
+[32mSizeEstimatorSuite:[0m
+[32m- test cost model[0m
+[32mMjContextSuite:[0m
+[32m- strategy test[0m
+[36mRun completed in 27 seconds, 838 milliseconds.[0m
+[36mTotal number of tests run: 14[0m
+[36mSuites: completed 8, aborted 0[0m
+[36mTests: succeeded 14, failed 0, canceled 0, ignored 0, pending 0[0m
+[32mAll tests passed.[0m
