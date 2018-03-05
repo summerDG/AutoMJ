@@ -1,8 +1,8 @@
 package org.pasalab.automj
 
-import org.apache.spark.MjStatistics
+import org.apache.spark.{MjStatistics, SampleStat}
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId}
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, ExprId, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, ShareJoin, Statistics}
 import org.apache.spark.sql.execution.KeysAndTableId
 import org.apache.spark.sql.internal.SQLConf
@@ -13,7 +13,7 @@ import scala.collection.mutable
  * Created by wuxiaoqi on 17-12-7.
  */
 //TODO: catalog可能在属性重排序的时候用到, 现在的策略不需要
-case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneRoundStrategy(catalog, conf) {
+case class ShareStrategy(override val catalog: MjSessionCatalog, conf: SQLConf)  extends OneRoundStrategy(catalog, conf) {
   override protected def optimizeCore: LogicalPlan = {
     ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)
@@ -25,11 +25,9 @@ case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneR
     }.groupBy(_._1).map {
       case (rId, sIds) => (rId, numShufflePartitions / sIds.map(x => shares(x._2)).fold(1)(_ * _))
     }
-    val statistics = relations.flatMap(x => catalog.getStatistics(x))
-    assert(statistics.length == relations.length, "some relation has no statistics")
 
     rIdToShare.map {
-      case (rId, replicate) => statistics(rId).sizeInBytes * replicate
+      case (rId, replicate) => sizesInBytes(rId) * replicate
     }.sum
   }
 
@@ -67,5 +65,56 @@ case class ShareStrategy(catalog: MjSessionCatalog, conf: SQLConf)  extends OneR
     }
 
     newOrderedAttr.map(_.sortBy(_.tableId).toSeq)
+  }
+
+  def generarteValidTree(v: Int, scaned: Set[Int], equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]): MultipleTreeNode = {
+    val newScaned = scaned + v
+    if (newScaned.size < equivalenceClasses.size) {
+      // 找到涉及到的表
+      val rIds = equivalenceClasses(v).map {
+        case node =>
+          node.v.rId
+      }
+      // 找到表关联的其他等价类
+      val eqIds = equivalenceClasses.zipWithIndex.filter {
+        case (s, id) =>
+          !newScaned.contains(id) && s.filter(n => rIds.contains(n.v.rId)).nonEmpty
+      }.map (_._2)
+      // eqIds可能为空
+      val children = eqIds.map (i => generarteValidTree(i, newScaned, equivalenceClasses))
+      MultipleTreeNode(v, children.toArray)
+    } else {
+      MultipleTreeNode(v, null)
+    }
+  }
+  def generateValidPath(treeNode: MultipleTreeNode, maxLen: Int, pre: Seq[Int], paths: mutable.ArrayBuffer[Seq[Int]]): Unit = {
+    val p = pre.:+(treeNode.v)
+    if (p.size == maxLen) {
+      paths += p
+    } else {
+      if (treeNode.children != null && treeNode.children.nonEmpty) {
+        for (child <- treeNode.children) {
+          generateValidPath(child, maxLen, p, paths)
+        }
+      }
+    }
+  }
+  override def attrOptimization(samples: Seq[SampleStat[Any]], equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]): Array[Seq[KeysAndTableId]] = {
+    val trees = (0 to equivalenceClasses.length - 1).map (x => generarteValidTree(x, Set[Int](), equivalenceClasses))
+    val paths = mutable.ArrayBuffer[Seq[Int]]()
+    for (tree <- trees) {
+      generateValidPath(tree, equivalenceClasses.length, Seq[Int](), paths)
+    }
+    //TODO: 暂时选第一条合理的路径作为新排序, 因为随机路径会导致性能不稳定
+    val id = 0
+    assert(paths.length > 0, "no valid order!!!!")
+    paths(id).map {
+      case i =>
+        equivalenceClasses(i).map {
+          case n =>
+            val v = n.v
+            KeysAndTableId(v.k, v.rId)
+        }
+    }.toArray
   }
 }

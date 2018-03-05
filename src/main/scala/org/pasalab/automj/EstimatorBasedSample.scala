@@ -1,10 +1,8 @@
 package org.pasalab.automj
 
-import joinery.DataFrame
-import joinery.DataFrame.JoinType
 import org.apache.spark.SampleStat
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.expressions.NamedExpression
+import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
 import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable
@@ -104,5 +102,10 @@ case class EstimatorBasedSample(catalog: MjSessionCatalog, conf: SQLConf) extend
 //
 //    communication
     BigInt(conf.getConfString(MjConfigConst.JOIN_DEFAULT_SIZE))
+  }
+
+  //TODO: 以后实现基于采用的Join Size预测算法
+  override def joinSample(condition: Map[(Int, Int), Option[Expression]], samples: Seq[SampleStat[Any]]): SampleStat[Any] = {
+    samples.head
   }
 }

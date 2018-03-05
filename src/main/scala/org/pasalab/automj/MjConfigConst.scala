@@ -14,5 +14,6 @@ object MjConfigConst {
   val SAMPLE_FRACTION: String = "spark.automj.statistics.sample.fraction"
   val ONE_ROUND_ONCE: String = "spark.automj.oneRound.once"
   val ONE_ROUND_PARTITIONS: String = "spark.automj.oneRound.partitions"
+  val DATA_SCALA: String = "spark.automj.data.scale"
   val EXECUTION_MODE: String = "spark.automj.execution.mode"
 }
