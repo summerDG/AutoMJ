@@ -53,18 +53,44 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 //              s"($l, $r)->[(${lk.mkString(",")}), (${rk.mkString(",")})]"
 //          }.mkString("\n")}\n" +
 //          s"other: ${otherConditions.mkString(",")}")
-        // 找出查询结构中的环
-        val circle: Seq[Int] = findCircle(originBothKeysEachCondition.toSeq.map(_._1), relations.length)
+        // 这个图适用于划分等价类
+        val initEdges = originBothKeysEachCondition.toSeq.map {
+          case ((l, r), (lk, rk)) =>
+            (AttributeVertex(l, lk), AttributeVertex(r, rk))
+        }
+        val equivalenceClasses = Graph(initEdges).connectComponent()
+        val edges = mutable.HashMap[(Int, Int),Set[Int]]()
+        val len = equivalenceClasses.length
+        for (v <- 0 to len - 1; u <- v + 1 to len - 1) {
+          val vTableIds = equivalenceClasses(v).map(_.v.rId).toSet
+          val uTableIds = equivalenceClasses(u).map(_.v.rId).toSet
+          val ints = vTableIds.intersect(uTableIds)
+          if (ints.nonEmpty) {
+            edges += (v, u) -> ints
+          }
+        }
+        // 找出查询结构中的等价类环
+        val circle = findCircle(edges.toSeq.map(_._1), relations.length)
+        val rIdsInCircle: Seq[Int] = {
+          val tIdsInCircle = mutable.Set[Int]()
+          for (((a, b), tIds) <- edges) {
+            if (circle.contains(a) && circle.contains(b)) {
+              assert(tIds.nonEmpty, "two equivalence classes has no common tables")
+              tIdsInCircle ++= tIds
+            }
+          }
+          tIdsInCircle.toSeq
+        }
 
         val (tmpOneRoundCondition, tmpCondition) = originBothKeysEachCondition.partition {
           case ((l, r), _) =>
-            circle.contains(l) && circle.contains(r)
+            rIdsInCircle.contains(l) && rIdsInCircle.contains(r)
         }
-        if (circle.nonEmpty) assert(tmpOneRoundCondition.nonEmpty, s"circle is ${circle.mkString(",")}")
+        if (rIdsInCircle.nonEmpty) assert(tmpOneRoundCondition.nonEmpty, s"rIdsInCircle is ${rIdsInCircle.mkString(",")}")
         val keys = originBothKeysEachCondition.flatMap(x => x._2._1 ++ x._2._1).toSet
-        val (oneRoundKeys, oneRoundRelations) = circle
+        val (oneRoundKeys, oneRoundRelations) = rIdsInCircle
           .map(rId => (keysEachRelation(rId).filter(keys), relations(rId))).unzip
-        val idMap = circle.zipWithIndex.toMap
+        val idMap = rIdsInCircle.zipWithIndex.toMap
         //          assert(false, s"idMap: ${idMap.map {case (k, v) => s"$k -> $v"}.mkString("\n")}")
         val oneRoundJoins = tmpOneRoundCondition.map {
           case ((l, r), v) =>
@@ -86,7 +112,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
         val (combinedConditionMap, multiRoundCondition) = if (useOneRound) {
           tmpCondition.partition {
             case ((l, r), _) =>
-              circle.contains(l) || circle.contains(r)
+              rIdsInCircle.contains(l) || rIdsInCircle.contains(r)
           }
         } else {
           (mutable.Map[(Int, Int), (Seq[Expression], Seq[Expression])](), originBothKeysEachCondition)
@@ -94,7 +120,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 
 
         // 生成一轮Join的LogicalPlan ShareJoin
-        val multiRoundIds = (0 to relations.length - 1).filter(i => !circle.contains(i))
+        val multiRoundIds = (0 to relations.length - 1).filter(i => !rIdsInCircle.contains(i))
 
         // 将剩余的relations按照Join条件组织成一张图, 凡是有Join关系的表就会相连, 进行等价类划分
         // 然后把与ShareJoin相连的condition也按照等价类划分出来
