@@ -66,15 +66,17 @@ abstract class OneRoundStrategy(val catalog: MjSessionCatalog, conf: SQLConf) ex
         }
     }
     val (s, n) = computeSharesAndPartitions(relations.length, closures, sizes, partitionNum)
-    sizesInBytes = sizes.zip(samples).map {
-      case (c, s) =>
-        val tupleSize = ByteArrayUtils.objectToBytes(s.sample.head) match {
-          case Some(bytes) =>
-            bytes.length
-          case _ => 0
-        }
-        BigInt(c * tupleSize)
-    }
+//    sizesInBytes = sizes.zip(samples).map {
+//      case (c, s) =>
+//        val tupleSize = ByteArrayUtils.objectToBytes(s.sample.iterator().next()) match {
+//          case Some(bytes) =>
+//            bytes.length
+//          case _ => 0
+//        }
+//        BigInt(c * tupleSize)
+//    }
+    //TODO: 等调试好了再改过来
+    sizesInBytes = sizes.map(x => BigInt(10))
     shares = s
     numShufflePartitions = n
   }

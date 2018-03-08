@@ -17,7 +17,7 @@ case class ShareJoinSelection(sqlConf: SQLConf) extends Strategy
   with PredicateHelper{
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
     plan match {
-      case ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition,
+      case ShareJoin(originOutput, reorderedKeysEachTable, relations, bothKeysEachCondition,
       conditions, numShufflePartitions, shares, dimensionToExprs, closures) =>
         val children: Seq[SparkPlan] = relations.map(n => planLater(n))
 
@@ -54,7 +54,7 @@ case class ShareJoinSelection(sqlConf: SQLConf) extends Strategy
         }
 
         logInfo(s"[POS]entering ShareJoinSelection, ${sqlConf.getConfString(MjConfigConst.EXECUTION_MODE)}")
-        LeapFrogJoinExec(reorderedKeysEachTable, bothKeysEachCondition,
+        LeapFrogJoinExec(originOutput, reorderedKeysEachTable, bothKeysEachCondition,
           conditions, childrenWithSorter, numShufflePartitions, closures) :: Nil
       case _ => Nil
     }

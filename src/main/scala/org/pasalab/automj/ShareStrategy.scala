@@ -15,7 +15,7 @@ import scala.collection.mutable
 //TODO: catalog可能在属性重排序的时候用到, 现在的策略不需要
 case class ShareStrategy(override val catalog: MjSessionCatalog, conf: SQLConf)  extends OneRoundStrategy(catalog, conf) {
   override protected def optimizeCore: LogicalPlan = {
-    ShareJoin(reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
+    ShareJoin(relations.flatMap(_.output), reorderedKeysEachTable, relations, bothKeysEachCondition, otherCondition,
       numShufflePartitions, shares, dimensionToExprs, closures)
   }
 
@@ -67,7 +67,7 @@ case class ShareStrategy(override val catalog: MjSessionCatalog, conf: SQLConf) 
     newOrderedAttr.map(_.sortBy(_.tableId).toSeq)
   }
 
-  def generarteValidTree(v: Int, scaned: Set[Int], equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]): MultipleTreeNode = {
+  def generarteValidTree(v: Int, scaned: Set[Int], equivalenceClasses: Seq[Seq[Node[AttributeVertex]]]): MultipleJoinTreeNode = {
     val newScaned = scaned + v
     if (newScaned.size < equivalenceClasses.size) {
       // 找到涉及到的表
@@ -82,12 +82,12 @@ case class ShareStrategy(override val catalog: MjSessionCatalog, conf: SQLConf) 
       }.map (_._2)
       // eqIds可能为空
       val children = eqIds.map (i => generarteValidTree(i, newScaned, equivalenceClasses))
-      MultipleTreeNode(v, children.toArray)
+      MultipleJoinTreeNode(v, children.toArray)
     } else {
-      MultipleTreeNode(v, null)
+      MultipleJoinTreeNode(v, null)
     }
   }
-  def generateValidPath(treeNode: MultipleTreeNode, maxLen: Int, pre: Seq[Int], paths: mutable.ArrayBuffer[Seq[Int]]): Unit = {
+  def generateValidPath(treeNode: MultipleJoinTreeNode, maxLen: Int, pre: Seq[Int], paths: mutable.ArrayBuffer[Seq[Int]]): Unit = {
     val p = pre.:+(treeNode.v)
     if (p.size == maxLen) {
       paths += p

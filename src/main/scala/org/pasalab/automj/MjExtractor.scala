@@ -38,6 +38,9 @@ object MjExtractor extends Logging with PredicateHelper {
     ConditionMatrix,
     Seq[Expression],
     Seq[LogicalPlan])
+  type ProjectListType = (Seq[Attribute],Seq[Seq[Expression]],ConditionMatrix,
+    Seq[Expression],
+    Seq[LogicalPlan])
 
   def splitJoin(plan: LogicalPlan): Option[ReturnType] = {
     val (items, conditions) = extractInnerJoins(plan)
@@ -114,12 +117,20 @@ object MjExtractor extends Logging with PredicateHelper {
     }
   }
 
-  def unapply(plan: LogicalPlan): Option[ReturnType] = plan match {
+  def unapply(plan: LogicalPlan): Option[ProjectListType] = plan match {
     case j @ Join(_, _, _: InnerLike, Some(cond)) =>
-      splitJoin(j)
+      splitJoin(j) match {
+        case Some((a,b,c,d)) =>
+          Some((j.output, a,b, c, d))
+        case _ => None
+      }
     case p @ Project(projectList, Join(_, _, _: InnerLike, Some(cond)))
       if projectList.forall(_.isInstanceOf[Attribute]) =>
-      splitJoin(p)
+      splitJoin(p) match {
+        case Some((a,b,c,d)) =>
+          Some((projectList.map(_.toAttribute), a,b, c, d))
+        case _ => None
+      }
     case other => None
   }
 }

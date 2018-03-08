@@ -2,7 +2,7 @@ package org.apache.spark.sql.catalyst.optimizer
 
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.SQLContext
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
+import org.apache.spark.sql.catalyst.expressions.{And, Attribute, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.rules.Rule
@@ -45,7 +45,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                 joinSizeEstimatorCore: JoinSizeEstimator,
                 forceOneRound: Boolean)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
-      case MjExtractor(keysEachRelation,
+      case MjExtractor(output, keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)
         if (sqlConf.getConfString(MjConfigConst.ONE_ROUND_ONCE, "false") == "true" ) =>
 //        assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
@@ -59,14 +59,44 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 //        val j: LogicalPlan = oneCircleJoinBranches(keysEachRelation,
 //          oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations)
 //        sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
-        val j = mixedCircleWithBraches(keysEachRelation, oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations)
+        val j = updateOutput(output,
+          mixedCircleWithBraches(keysEachRelation, oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations))
         // 如果多轮Join之后还有条件谓词，就加个过滤器
         //assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
-        if (otherConditions.isEmpty) Project(plan.output, j)
+        //assert(plan.output.filter(a => !j.output.contains(a)).nonEmpty, s"plan output: ${plan.output.mkString("[",",","]")}, child output: ${j.output.mkString("[",",","]")}")
+        val wapper = if (otherConditions.isEmpty) j
         else {
           val filterCondition = otherConditions.reduce((l, r) => And(l, r))
-          Project(plan.output, Filter(filterCondition, j))
+          Filter(filterCondition, j)
         }
+        sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
+        wapper
+    }
+  }
+  def updateOutput(newOutput: Seq[Attribute], plan: LogicalPlan): LogicalPlan = {
+    assert(newOutput!=null && plan != null, s"plan:${plan != null}, output: ${newOutput != null}")
+    assert(plan.output != null, s"plan output null")
+    assert(newOutput.length <= plan.output.length, s"output: ${newOutput.length}, plan: ${plan.output.length}")
+    assert(newOutput.forall(x => plan.output.contains(x)), s"new output has attribute which not in child output")
+    if (plan.output.length > newOutput.length) {
+      // 映射操作
+      Project(newOutput, plan)
+    } else {
+      val f = plan.output.zip(newOutput).forall{
+        case (a,b) =>
+          a.equals(b)
+      }
+      if (f) plan
+      else {
+        plan match {
+          case j: ShareJoin =>
+            j.copy(originOutput = newOutput)
+          case p: Project =>
+            p.copy(projectList = newOutput)
+          case o =>
+            Project(newOutput, o)
+        }
+      }
     }
   }
 
@@ -77,9 +107,30 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                                      forceOneRound: Boolean,
                                      originBothKeysEachCondition: ConditionMatrix,
                                      relations: Seq[LogicalPlan]): LogicalPlan = {
-    val edges = originBothKeysEachCondition.toSeq.map(_._1)
-    val nodesNum = relations.length
-    val tree = Graph.transformToJoinTree(nodesNum, edges)
+    val initEdges = originBothKeysEachCondition.toSeq.map {
+      case ((l, r), (lk, rk)) =>
+        (AttributeVertex(l, lk), AttributeVertex(r, rk))
+    }
+    val relationNum = relations.length
+    val equivalenceClasses = Graph(initEdges).connectComponent()
+    val rIdToCids = new Array[Set[Int]](relationNum).map(_ => Set[Int]())
+    val edges = mutable.HashMap[(Int, Int),Set[Int]]()
+    val variablesNum = equivalenceClasses.length
+    for (v <- 0 to variablesNum - 1; u <- v + 1 to variablesNum - 1) {
+      val vTableIds = equivalenceClasses(v).map(_.v.rId).toSet
+      val uTableIds = equivalenceClasses(u).map(_.v.rId).toSet
+      val ints = vTableIds.intersect(uTableIds)
+      if (ints.nonEmpty) {
+        edges += (v, u) -> ints
+      }
+    }
+    for (i <- 0 to variablesNum - 1) {
+      equivalenceClasses(i).foreach {
+        case Node(AttributeVertex(rId, _)) =>
+          rIdToCids(rId) = rIdToCids(rId) + i
+      }
+    }
+    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
     val catalog = oneRoundCore.catalog
     val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
       catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
@@ -192,7 +243,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
 
   def oneRoundMode(oneRoundCore: OneRoundStrategy)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
-      case MjExtractor(keysEachRelation,
+      case MjExtractor(output, keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)
         if (sqlConf.getConfString(MjConfigConst.ONE_ROUND_ONCE, "false") == "true" )=>
         //          assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
@@ -206,16 +257,17 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt)
 
         // 合并一轮Join节点和多轮Join的节点
-        val j: LogicalPlan = oneRoundCore.optimize()
+        val j: LogicalPlan = updateOutput(output, oneRoundCore.optimize())
         assert(j.isInstanceOf[ShareJoin], s"not ShareJoin(${j.getClass.getName})")
 
         sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
         // 如果多轮Join之后还有条件谓词，就加个过滤器
-        if (otherConditions.isEmpty) Project(plan.output, j)
+        val wapper = if (otherConditions.isEmpty) j
         else {
           val filterCondition = otherConditions.reduce((l, r) => And(l, r))
-          Project(plan.output, Filter(filterCondition, j))
+          Filter(filterCondition, j)
         }
+        wapper
     }
   }
 

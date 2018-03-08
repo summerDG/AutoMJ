@@ -1,5 +1,6 @@
 package org.pasalab.automj
 
+import joinery.DataFrame
 import org.apache.spark.SampleStat
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.automj.MjSessionCatalog
