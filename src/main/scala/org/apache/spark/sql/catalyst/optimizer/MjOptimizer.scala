@@ -15,6 +15,7 @@ import scala.collection.mutable
 /**
  * Created by wuxiaoqi on 17-11-29.
  */
+//TODO: 因为测试过程中会执行两遍queryExecution.execute: 1. PlanTest中assertEmptyMissingInput会执行一遍optimizedPlan; 2. 验证结果
 case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                        multiRoundStrategy: Option[MultiRoundStrategy] = None,
                        joinSizeEstimator: Option[JoinSizeEstimator] = None,
@@ -46,8 +47,8 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
                 forceOneRound: Boolean)(plan: LogicalPlan): LogicalPlan = {
     plan transform {
       case MjExtractor(output, keysEachRelation,
-      originBothKeysEachCondition, otherConditions, relations)
-        if (sqlConf.getConfString(MjConfigConst.ONE_ROUND_ONCE, "false") == "true" ) =>
+      originBothKeysEachCondition, otherConditions, relations)=>
+//        assert(sqlConf.getConfString(MjConfigConst.ONE_ROUND_ONCE, "false") == "true", s"optimizer is used twice")
 //        assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
 //          s"joins: ${originBothKeysEachCondition.map {
 //            case ((l, r), (lk, rk)) =>
@@ -130,7 +131,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           rIdToCids(rId) = rIdToCids(rId) + i
       }
     }
-    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
+    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids, equivalenceClasses)
     val catalog = oneRoundCore.catalog
     val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
       catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
@@ -231,7 +232,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
       assert(oneRound.isInstanceOf[ShareJoin], s"not ShareJoin(${oneRound.getClass.getName})")
       branches.foldLeft(oneRound) {
         case (pre, branch) =>
-          Join(pre, branch._1, Inner, branch._2)
+          TempJoin(pre, branch._1, Inner, branch._2)
       }
     } else {
       // 因为没有环，所以这张图是联通的

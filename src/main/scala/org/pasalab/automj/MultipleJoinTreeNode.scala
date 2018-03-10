@@ -4,7 +4,7 @@ import org.apache.spark.SampleStat
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, Expression}
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, TempJoin}
 import org.pasalab.automj.MjExtractor.ConditionMatrix
 
 import scala.collection.mutable
@@ -112,7 +112,7 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
             else None
         }.reduce((l, r) => And(l, r))
 
-        val plan = Join(left, right, Inner, Some(condition))
+        val plan = TempJoin(left, right, Inner, Some(condition))
         val condMap = Map[(Int, Int), Option[Expression]]((0,1) -> Some(condition))
         val sample = if (useSample) {
           Some(joinSizeEstimator.joinSample(condMap, Seq[SampleStat[Any]](leftSample.get, rightSample.get)))

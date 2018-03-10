@@ -1,7 +1,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.catalyst.optimizer.MjOptimizer
-import org.apache.spark.sql.execution.ShareJoinSelection
+import org.apache.spark.sql.execution.{ShareJoinSelection, TempJoinSelection}
 import org.apache.spark.sql.test.SharedSQLContext
 import org.pasalab.automj.MjConfigConst
 
@@ -26,7 +26,9 @@ class MjContextSuite extends SharedSQLContext{
         assert(m.joinSizeEstimator.isDefined, "not define joinSizeEstimator")
     }
 
-    val strategy = mjSession.sessionState.planner.extraPlanningStrategies.head
-    assert(strategy.isInstanceOf[ShareJoinSelection], "Not ShareJoinSelection!!!")
+    val strategy1 = mjSession.sessionState.planner.extraPlanningStrategies(0)
+    assert(strategy1.isInstanceOf[TempJoinSelection], "Not TempJoinSelection!!!")
+    val strategy2 = mjSession.sessionState.planner.extraPlanningStrategies(1)
+    assert(strategy2.isInstanceOf[ShareJoinSelection], "Not ShareJoinSelection!!!")
   }
 }

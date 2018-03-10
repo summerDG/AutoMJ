@@ -2,7 +2,7 @@ package org.pasalab.automj
 
 import org.apache.spark.sql.QueryTest
 import org.apache.spark.sql.automj.MjSessionCatalog
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LocalRelation, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan, TempJoin}
 import org.apache.spark.sql.execution.command.CreateViewCommand
 import org.apache.spark.sql.test.SharedSQLContext
 
@@ -16,12 +16,12 @@ class MultiRoundSuite extends QueryTest with SharedSQLContext{
     val multiRoundStrategy: MultiRoundStrategy = new LeftDepthStrategy(sqlConf)
     val plan = multiRoundStrategy.optimize(dataSource.joinConditions, dataSource.relations)
 
-    assert(plan.isInstanceOf[Join], "Not Join Node")
+    assert(plan.isInstanceOf[TempJoin], "Not Join Node")
 
     val tableName= Seq[String]("a", "b", "c", "d")
 
     plan match {
-      case j: Join =>
+      case j: TempJoin =>
         val left = j.left
         val right = j.right
         val name = getTableNameFromPlan(right)
@@ -33,7 +33,7 @@ class MultiRoundSuite extends QueryTest with SharedSQLContext{
       case "d" =>
         dIsEnd(left, 2, tableName)
       case x =>
-        fail(s"Last Join relation should be a or d (not $x, left is join: ${left.isInstanceOf[Join]})")
+        fail(s"Last Join relation should be a or d (not $x, left is join: ${left.isInstanceOf[TempJoin]})")
     }
   }
 
@@ -56,7 +56,7 @@ class MultiRoundSuite extends QueryTest with SharedSQLContext{
   private def aIsEnd(head: LogicalPlan, idx: Int, tableName: Seq[String]): Unit = {
     val exp = tableName(idx)
     head match {
-      case join: Join =>
+      case join: TempJoin =>
         val left = join.left
         val right = join.right
         right match {
@@ -73,7 +73,7 @@ class MultiRoundSuite extends QueryTest with SharedSQLContext{
   private def dIsEnd(head: LogicalPlan, idx: Int, tableName: Seq[String]): Unit = {
     val exp = tableName(idx)
     head match {
-      case join: Join =>
+      case join: TempJoin =>
         val left = join.left
         val right = join.right
         right match {

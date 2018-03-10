@@ -122,14 +122,15 @@ object Graph {
   //TODO: 由于每次找到的最大团不一定与之前的join节点有关, 所以不一定是左深度树
   def transformToJoinTree(nodesCount: Int,
                           initEdges: Map[(Int, Int), Set[Int]],
-                          rIdToCids: Seq[Set[Int]]): MultipleJoinTreeNode = {
+                          rIdToCids: Seq[Set[Int]], eq:Seq[Seq[Node[AttributeVertex]]]): MultipleJoinTreeNode = {
     // 最新的查询结构图, 每一轮操作要更新
     var edges: Seq[(Int, Int)] = initEdges.toSeq.map(_._1)
     // 记录被添加到树中的表
     val scanned: mutable.Set[Int] = new mutable.HashSet[Int]()
     var root: MultipleJoinTreeNode = null
-    val nodeIdToCids: mutable.ArrayBuffer[(MultipleJoinTreeNode, Set[Int])] =
-      new mutable.ArrayBuffer[(MultipleJoinTreeNode, Set[Int])]()
+    // 第一个value为对应的节点, 第二个value代表其包含的变量集合
+    val nodeIdToCids: mutable.HashMap[Int,(MultipleJoinTreeNode, Set[Int])] =
+      new mutable.HashMap[Int,(MultipleJoinTreeNode, Set[Int])]()
     do {
       val m = new MaximalCliquesWithPivot(nodesCount, edges)
       m.Bron_KerboschPivotExecute()
@@ -138,9 +139,14 @@ object Graph {
         val cliques = m.getMaxCliques
         // 这里由于scanned的保证，所以cliques永远不为空
         // 尽量让当前的最大团与之前的Join节点有关联, 因为在之前的试验中，有些时候把语法树并行度增加了之后性能反而会下降
+        val eqStr = eq.zipWithIndex.map {
+          case (s: Seq[Node[AttributeVertex]], i: Int) =>
+            s"($i)${s.map(n =>s"${n.v.rId} ${n.v.k.mkString("[",",","]")}").mkString("{",",","}")}"
+        }.mkString("\n")
+        assert(cliques.nonEmpty, s"edges: ${initEdges.toSeq.map(_._1).mkString("{",",","}")}\neq num: $nodesCount\n$eqStr\ntables:${scanned.mkString("[",",","]")}")
         val maxLen = cliques.map(_.length).max
         val candidates = cliques.filter(_.length == maxLen)
-        val preRootCandidate = candidates.filter(x => x.find(n => nodeIdToCids.length > n.v).isDefined)
+        val preRootCandidate = candidates.filter(x => x.find(n => nodeIdToCids.contains(n.v)).isDefined)
         if (preRootCandidate.isEmpty) {
           candidates.head
         } else {
@@ -151,14 +157,16 @@ object Graph {
       // 当前节点包含哪些变量
       val vIds = maxClique.flatMap {
         case Node(v) =>
-          if (nodeIdToCids.length > v) nodeIdToCids(v)._2
+          if (nodeIdToCids.contains(v)) nodeIdToCids(v)._2
           else Seq(v)
       }.toSet
       // 选取属于这个变量集合的表集合, 这些表不能被扫描过
       val rIds = (0 to rIdToCids.length - 1).filter(i => !scanned.contains(i) && rIdToCids(i).subsetOf(vIds)).toArray
       // 选取属于这个变量集合的节点集合
-      val nodeIds = (0 to nodeIdToCids.length - 1).filter(i => nodeIdToCids(i)._2.subsetOf(vIds)).toArray
-      val nodeId = if (nodeIds.length > 0) nodeIds.min else nodeIdToCids.length
+      val nodeIds = nodeIdToCids.filter{
+        case (_, (_, v)) => v.subsetOf(vIds)
+      }.map(_._1).toArray
+      val nodeId = maxClique.map(_.v).min
       // 如果节点已经存在, 就不需要重新构造
       root = MultipleJoinTreeNode(nodeId,
         nodeIds.map(i => nodeIdToCids(i)._1) ++ rIds.map(x => MultipleJoinTreeNode(x, null)))
@@ -166,7 +174,7 @@ object Graph {
       // 1. 移除已经使用过的节点
       for (i <- nodeIds.sortWith(_ > _)) nodeIdToCids.remove(i)
       // 2. 更新(合并这轮使用的)节点
-      nodeIdToCids.insert(nodeId, (root, vIds))
+      nodeIdToCids.put(nodeId, (root, vIds))
       // 更新扫描过的表集合
       for (n <- rIds) {
         scanned.add(n)
@@ -178,7 +186,7 @@ object Graph {
           (nl, nr)
       }.filter(x => x._1 != x._2).toSet.toSeq
     } while (scanned.size < rIdToCids.size)
-    assert(nodeIdToCids.length == 1, s"Some node are not added in join tree")
+    assert(nodeIdToCids.size == 1, s"Some node are not added in join tree")
     assert(rIdToCids.length == scanned.size, "There exists relation which not in join tree!!!")
     root
   }
