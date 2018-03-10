@@ -4,7 +4,7 @@ import org.apache.spark.SampleStat
 import org.apache.spark.sql.automj.MjSessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{Add, And, EqualTo, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.Inner
-import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan}
+import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, TempJoin}
 import org.apache.spark.sql.internal.SQLConf
 
 import scala.collection.mutable
@@ -61,7 +61,7 @@ case class LeftDepthStrategy(conf: SQLConf) extends MultiRoundStrategy(conf){
         }
 //        assert(r != 2, s"${conditions.mkString(",")}, left:${join}, right: ${plan}")
         assert(conditions.nonEmpty, s"conditions is empty, scanned: ${scanned.mkString(",")}, r: $r")
-        join = Join(join, plan, Inner, Some(conditions.reduce(And(_,_))))
+        join = TempJoin(join, plan, Inner, Some(conditions.reduce(And(_,_))))
       }
     }
 

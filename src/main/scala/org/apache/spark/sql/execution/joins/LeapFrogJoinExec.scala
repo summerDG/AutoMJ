@@ -17,7 +17,8 @@ import scala.collection.mutable.ArrayBuffer
 /**
  * Created by wuxiaoqi on 17-11-28.
  */
-case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
+case class LeapFrogJoinExec(originOutput: Seq[Attribute],
+                            keysEachRelation: Seq[Seq[Expression]],
                             bothKeysEachCondition: Map[(Int, Int), (Seq[Expression], Seq[Expression])],
                             conditions: Option[Expression],
                             relations: Seq[SparkPlan],
@@ -30,12 +31,7 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
   override def nodeName: String = {
     "HyperCubeMultiJoinExec"
   }
-  override def output: Seq[Attribute] = {
-    assert(relations.nonEmpty)
-    var o = relations(0).output
-    for (i <- 1 until relations.length) o ++= relations(i).output
-    o
-  }
+  override def output: Seq[Attribute] = originOutput
 
   /** The partitioning are used to determine whether it need to add shuffle exchange node. */
   override def outputPartitioning: Partitioning = PartitioningCollection(relations.map(_.outputPartitioning))
@@ -86,7 +82,7 @@ case class LeapFrogJoinExec(keysEachRelation: Seq[Seq[Expression]],
             val keys = closure.head._1.expressions
             newNaturalAscendingOrdering(keys.map(_.dataType))
         }
-        val resultProj: InternalRow => InternalRow = UnsafeProjection.create(output, output)
+        val resultProj: InternalRow => InternalRow = UnsafeProjection.create(output, relations.flatMap(_.output))
 
         new RowIterator {
           private[this] val currentMatches: Array[RowExtractor] =

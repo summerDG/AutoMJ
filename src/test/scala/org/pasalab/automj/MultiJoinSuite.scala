@@ -16,7 +16,8 @@ class MultiJoinSuite extends QueryTest with SharedSQLContext{
       MjConfigConst.EXECUTION_MODE -> "one-round",
       MjConfigConst.ONE_ROUND_ONCE -> "true",
       MjConfigConst.ONE_ROUND_PARTITIONS -> "8"){
-      checkAnswer(sql("SELECT * FROM a, b, c where a.x = b.x AND b.y = c.y AND c.z = a.z"), expectedTriangle())
+      val frame = sql("SELECT * FROM a, b, c where a.x = b.x AND b.y = c.y AND c.z = a.z")
+      checkAnswer(frame, expectedTriangle())
     }
   }
   test("triangle data correctness test(use cost model)") {
@@ -25,7 +26,9 @@ class MultiJoinSuite extends QueryTest with SharedSQLContext{
       MjConfigConst.EXECUTION_MODE -> "mixed",
       MjConfigConst.ONE_ROUND_ONCE -> "true",
       MjConfigConst.ONE_ROUND_PARTITIONS -> "8") {
-      checkAnswer(sql("SELECT * FROM a, b, c where a.x = b.x AND b.y = c.y AND c.z = a.z"), expectedTriangle())
+      val frame = sql("SELECT * FROM a, b, c where a.x = b.x AND b.y = c.y AND c.z = a.z")
+      //assert(false, s"${frame.queryExecution.optimizedPlan}\n${frame.queryExecution.sparkPlan}\n${frame.queryExecution.executedPlan}")
+      checkAnswer(frame, expectedTriangle())
     }
   }
   test("clique data correctness test") {

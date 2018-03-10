@@ -4,7 +4,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.annotation.InterfaceStability
 import org.apache.spark.sql.automj.{MjSessionCatalog, MjSessionStateBuilder}
 import org.apache.spark.sql.catalyst.optimizer.MjOptimizer
-import org.apache.spark.sql.execution.ShareJoinSelection
+import org.apache.spark.sql.execution.{ShareJoinSelection, TempJoinSelection}
 import org.apache.spark.sql.internal.{SessionState, SharedState}
 import org.pasalab.automj.{JoinSizeEstimator, MjConfigConst, MultiRoundStrategy, OneRoundStrategy}
 
@@ -86,6 +86,10 @@ object MjSession {
         optimizer
     }
     // 增添新物理优化策略
+    extensions.injectPlannerStrategy {
+      session =>
+        TempJoinSelection(session.sqlContext.conf)
+    }
     extensions.injectPlannerStrategy {
       session =>
         ShareJoinSelection(session.sqlContext.conf)

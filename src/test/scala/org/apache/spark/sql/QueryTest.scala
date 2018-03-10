@@ -21,7 +21,6 @@ import java.util.{ArrayDeque, Locale, TimeZone}
 
 import scala.collection.JavaConverters._
 import scala.util.control.NonFatal
-
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate.ImperativeAggregate
 import org.apache.spark.sql.catalyst.plans._
@@ -34,6 +33,7 @@ import org.apache.spark.sql.execution.columnar.InMemoryRelation
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.streaming.MemoryPlan
 import org.apache.spark.sql.types.{Metadata, ObjectType}
+import org.pasalab.automj.MjConfigConst
 
 
 abstract class QueryTest extends PlanTest {
@@ -244,6 +244,7 @@ object QueryTest {
    * If there was exception during the execution or the contents of the DataFrame does not
    * match the expected result, an error message will be returned. Otherwise, a [[None]] will
    * be returned.
+   * Dataset.rdd的操作首先是将dataset的logicalplan反序列化为对象, 然后再执行反序列化对象生成rdd, 所以会执行两遍优化过程
    *
    * @param df the [[DataFrame]] to be executed
    * @param expectedAnswer the expected result in a [[Seq]] of [[Row]]s.
@@ -252,7 +253,7 @@ object QueryTest {
   def checkAnswer(
                    df: DataFrame,
                    expectedAnswer: Seq[Row],
-                   checkToRDD: Boolean = true): Option[String] = {
+                   checkToRDD: Boolean = false): Option[String] = {
     val isSorted = df.logicalPlan.collect { case s: logical.Sort => s }.nonEmpty
     if (checkToRDD) {
       df.rdd.count()  // Also attempt to deserialize as an RDD [SPARK-15791]
