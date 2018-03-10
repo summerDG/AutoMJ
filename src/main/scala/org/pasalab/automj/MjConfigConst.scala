@@ -9,6 +9,7 @@ object MjConfigConst {
   val ONE_ROUND_STRATEGY: String = "spark.automj.oneRoundStrategy"
   val JOIN_SIZE_ESTIMATOR: String = "spark.automj.joinSizeEstimator"
   val JOIN_DEFAULT_SIZE: String = "spark.automj.joinDefaultSize"
+  val SHARE_JOIN_DEFAULT_SIZE: String = "spark.automj.oneRound.joinDefaultSize"
   val Force_ONE_ROUND: String = "spark.automj.useOneRound"
   val ENABLE_STATISTICS: String = "spark.automj.statistics.enable"
   val SAMPLE_FRACTION: String = "spark.automj.statistics.sample.fraction"

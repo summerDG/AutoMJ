@@ -40,6 +40,7 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
         val samples = planWithSamples.map(_._3).map(_.get)
         val plans = planWithSamples.map(_._1)
         val sizes = planWithSamples.map(_._4)
+        // rId -> childId
         val idMap: Map[Int, Int] = idsEachChild.zipWithIndex.flatMap {
           case (ids, newId) =>
             ids.map(x => (x, newId))
@@ -86,11 +87,13 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
         //        val multiRoundCost = BigInt((multiRoundSample.sample.size / multiRoundSample.fraction).toLong)
         //TODO: 由于现在Jounery.DataFrame[T]不好用, 所以先使用这种方法预测join size
         val size = sizes.reduce(_ * _) * scale
-        val multiRoundCost = BigInt(size)
+        //TODO: 先用参数代替
+        val multiRoundCost = BigInt(defaultMultiRoundCost)
         val idsSet = idsEachChild.fold(Set[Int]())(_ ++ _)
         val sample = if (useSample) Some(multiRoundSample) else None
         //TODO: 由于现在Jounery.DataFrame[T]不好用, 所以先使用这种方法预测join size
-        if (oneRoundCost < multiRoundCost) {
+        //TODO: 当链接条件的数量大于等于子节点的数量时, 就说明有环
+        if (oneRoundCost < multiRoundCost && joinConditions.size >= children.size) {
           // 生成ShareJoin
           val plan = oneRoundStrategy.optimize()
           (plan, idsSet, sample, size)
