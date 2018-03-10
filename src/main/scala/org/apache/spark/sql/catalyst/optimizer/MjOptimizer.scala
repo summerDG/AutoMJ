@@ -48,7 +48,6 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     plan transform {
       case MjExtractor(output, keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)=>
-//        assert(sqlConf.getConfString(MjConfigConst.ONE_ROUND_ONCE, "false") == "true", s"optimizer is used twice")
 //        assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
 //          s"joins: ${originBothKeysEachCondition.map {
 //            case ((l, r), (lk, rk)) =>
@@ -131,7 +130,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           rIdToCids(rId) = rIdToCids(rId) + i
       }
     }
-    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids, equivalenceClasses)
+    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
     val catalog = oneRoundCore.catalog
     val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
       catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
