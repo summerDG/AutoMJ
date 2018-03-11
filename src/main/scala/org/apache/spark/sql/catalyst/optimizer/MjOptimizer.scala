@@ -132,10 +132,17 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     }
     val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
     val catalog = oneRoundCore.catalog
+    val otherJoinSize:Long = if (sqlConf.getConfString(MjConfigConst.USE_THREE_JOIN, "true") == true) {
+      sqlConf.getConfString(MjConfigConst.THREE_JOIN_DEFAULT_SIZE, "100").toLong
+    } else {
+      sqlConf.getConfString(MjConfigConst.FOUR_JOIN_DEFAULT_SIZE, "100").toLong
+    }
     val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
       catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
       sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt,
       sqlConf.getConfString(MjConfigConst.JOIN_DEFAULT_SIZE, "100").toLong,
+      sqlConf.getConfString(MjConfigConst.TWO_JOIN_DEFAULT_SIZE, "100").toLong,
+      otherJoinSize,
       sqlConf.getConfString(MjConfigConst.DATA_SCALA, "1000").toInt)
     plan
   }

@@ -22,6 +22,8 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
                                   joinSizeEstimator: JoinSizeEstimator,
                                   partitionNum: Int = 100,
                                   defaultMultiRoundCost: Long = 100,
+                                  twoJoinSize: Long = 100,
+                                  otherJoinSize: Long = 100,
                                   scale: Int = 10000): (LogicalPlan, Set[Int], Option[SampleStat[Any]], Long) = {
     if (this.children == null || this.children.isEmpty) {
       val plan = relations(this.v)
@@ -29,7 +31,8 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
       val sample: Option[SampleStat[Any]] = if (useSample) {
         statistics.map(_.extractSample)
       } else None
-      val size = statistics.map(_.rowCount.get.toLong / scale).reduce(_ * _) * scale
+//      val size = statistics.map(_.rowCount.get.toLong / scale).reduce(_ * _) * scale
+      val size = statistics.get.sizeInBytes.longValue()
       (plan, Set[Int](this.v), sample, size)
     } else {
       if (this.children.size >= 3) {
@@ -86,7 +89,8 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
         val multiRoundSample = joinSizeEstimator.joinSample(condMap, samples)
         //        val multiRoundCost = BigInt((multiRoundSample.sample.size / multiRoundSample.fraction).toLong)
         //TODO: 由于现在Jounery.DataFrame[T]不好用, 所以先使用这种方法预测join size
-        val size = sizes.reduce(_ * _) * scale
+//        val size = sizes.reduce(_ * _) * scale
+        val size = otherJoinSize
         //TODO: 先用参数代替
         val multiRoundCost = BigInt(defaultMultiRoundCost)
         val idsSet = idsEachChild.fold(Set[Int]())(_ ++ _)
@@ -102,7 +106,7 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
           val plan = multiRoundStrategy.optimize(joinConditions, plans)
           (plan, idsSet, sample, size)
         }
-      } else {
+      } else if (children.size == 2){
         val (left, leftIds, leftSample, leftSize) = children(0).treeToLogicalPlanWithSample(useSample, relations, keysEachCondition, catalog, oneRoundStrategy, multiRoundStrategy, joinSizeEstimator, partitionNum, defaultMultiRoundCost, scale)
         val (right, rightIds, rightSample, rightSize) = children(1).treeToLogicalPlanWithSample(useSample, relations, keysEachCondition, catalog, oneRoundStrategy, multiRoundStrategy, joinSizeEstimator, partitionNum, defaultMultiRoundCost, scale)
 
@@ -123,7 +127,10 @@ case class MultipleJoinTreeNode(v: Int, children: Array[MultipleJoinTreeNode]) {
           None
         }
         //TODO: 由于现在Jounery.DataFrame[T]不好用, 所以先使用这种方法预测join size
-        (plan, leftIds union rightIds, sample, ((leftSize/scale) * (rightSize/scale))*scale)
+//        (plan, leftIds union rightIds, sample, ((leftSize/scale) * (rightSize/scale))*scale)
+        (plan, leftIds union rightIds, sample, twoJoinSize)
+      } else {
+        children(0).treeToLogicalPlanWithSample(useSample, relations, keysEachCondition, catalog, oneRoundStrategy, multiRoundStrategy, joinSizeEstimator, partitionNum, defaultMultiRoundCost, scale)
       }
     }
   }
