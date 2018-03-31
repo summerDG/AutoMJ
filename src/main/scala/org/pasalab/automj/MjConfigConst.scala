@@ -9,6 +9,10 @@ object MjConfigConst {
   val ONE_ROUND_STRATEGY: String = "spark.automj.oneRoundStrategy"
   val JOIN_SIZE_ESTIMATOR: String = "spark.automj.joinSizeEstimator"
   val JOIN_DEFAULT_SIZE: String = "spark.automj.joinDefaultSize"
+  val TWO_JOIN_DEFAULT_SIZE: String = "spark.automj.two.joinDefaultSize"
+  val THREE_JOIN_DEFAULT_SIZE: String = "spark.automj.three.joinDefaultSize"
+  val FOUR_JOIN_DEFAULT_SIZE: String = "spark.automj.four.joinDefaultSize"
+  val SHARE_JOIN_DEFAULT_SIZE: String = "spark.automj.oneRound.joinDefaultSize"
   val Force_ONE_ROUND: String = "spark.automj.useOneRound"
   val ENABLE_STATISTICS: String = "spark.automj.statistics.enable"
   val SAMPLE_FRACTION: String = "spark.automj.statistics.sample.fraction"
@@ -16,4 +20,5 @@ object MjConfigConst {
   val ONE_ROUND_PARTITIONS: String = "spark.automj.oneRound.partitions"
   val DATA_SCALA: String = "spark.automj.data.scale"
   val EXECUTION_MODE: String = "spark.automj.execution.mode"
+  val USE_THREE_JOIN: String = "spark.automj.useThree"
 }

@@ -29,6 +29,7 @@ case class ShareStrategy(override val catalog: MjSessionCatalog, conf: SQLConf) 
     rIdToShare.map {
       case (rId, replicate) => sizesInBytes(rId) * replicate
     }.sum
+    BigInt(conf.getConfString(MjConfigConst.SHARE_JOIN_DEFAULT_SIZE,"100"))
   }
 
   override def attrOptimization(closureLength: Int,

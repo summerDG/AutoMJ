@@ -51,10 +51,12 @@ class OneRoundStrategySuite extends SharedSQLContext{
     }
   }
   test("test cost model") {
-    val dataSource = triangleData
-    val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
-    oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
-    val cost: BigInt = oneRoundStrategy.cost()
-    assert(cost == 72, s"Communication Cost is not correct, $cost != 72")
+    withSQLConf(MjConfigConst.SHARE_JOIN_DEFAULT_SIZE->"72") {
+      val dataSource = triangleData
+      val oneRoundStrategy: OneRoundStrategy = ShareStrategy(catalog, sqlConf)
+      oneRoundStrategy.refresh(dataSource.keys, dataSource.joinConditions, dataSource.relations, 8, None)
+      val cost: BigInt = oneRoundStrategy.cost()
+      assert(cost == 72, s"Communication Cost is not correct, $cost != 72")
+    }
   }
 }
