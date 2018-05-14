@@ -39,7 +39,7 @@ trait SharedSQLContext extends SQLTestUtils with BeforeAndAfterEach with Eventua
       .set(MjConfigConst.SAMPLE_FRACTION, "1.0")
       .set(MjConfigConst.ONE_ROUND_PARTITIONS, "8")
       .set(MjConfigConst.DATA_SCALA, "2")
-      .set(MjConfigConst.EXECUTION_MODE, "mixed")
+      .set(MjConfigConst.EXECUTION_MODE, "mixed-fix")
   }
 
   /**

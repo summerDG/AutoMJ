@@ -34,7 +34,7 @@ private[sql] class TestSparkSession(sc: SparkContext) extends MjSession(sc) { se
         .set(MjConfigConst.JOIN_SIZE_ESTIMATOR, "org.pasalab.automj.EstimatorBasedSample")
         .set(MjConfigConst.ONE_ROUND_PARTITIONS, "8")
         .set(MjConfigConst.DATA_SCALA, "2")
-        .set(MjConfigConst.EXECUTION_MODE, "mixed")
+        .set(MjConfigConst.EXECUTION_MODE, "mixed-fix")
     ))
   }
 

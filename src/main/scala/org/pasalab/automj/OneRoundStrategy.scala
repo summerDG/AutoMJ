@@ -41,7 +41,7 @@ abstract class OneRoundStrategy(val catalog: MjSessionCatalog, conf: SQLConf) ex
       case ((l, r), (lk, rk)) =>
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
     }
-    val equivalenceClasses = Graph(initEdges).connectComponent()
+    val equivalenceClasses = Graph(initEdges).connectComponent(_.rId)
     assert(equivalenceClasses.forall(_.nonEmpty),
       s"equivalenceClasses(${equivalenceClasses.length})," +
         s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")
@@ -94,7 +94,7 @@ abstract class OneRoundStrategy(val catalog: MjSessionCatalog, conf: SQLConf) ex
       case ((l, r), (lk, rk)) =>
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
     }
-    val equivalenceClasses = Graph(initEdges).connectComponent()
+    val equivalenceClasses = Graph(initEdges).connectComponent(_.rId)
     assert(equivalenceClasses.forall(_.nonEmpty),
       s"equivalenceClasses(${equivalenceClasses.length})," +
         s" ${if (equivalenceClasses.forall(_.isEmpty)) "is all empty" else "has some empty"})")

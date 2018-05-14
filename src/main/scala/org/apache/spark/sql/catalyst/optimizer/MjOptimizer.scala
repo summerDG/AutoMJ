@@ -33,7 +33,9 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
           plan
         case "one-round" =>
           oneRoundMode(oneRoundCore)(plan)
-        case "mixed" =>
+        case "mixed-conf" =>
+          mixedConfMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound)(plan)
+        case "mixed-fix" =>
           mixedMode(oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound)(plan)
       }
 
@@ -48,19 +50,71 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     plan transform {
       case MjExtractor(output, keysEachRelation,
       originBothKeysEachCondition, otherConditions, relations)=>
-//        assert(false, s"keys: ${keysEachRelation.map(_.mkString(",")).mkString("-")} \n" +
-//          s"joins: ${originBothKeysEachCondition.map {
-//            case ((l, r), (lk, rk)) =>
-//              s"($l, $r)->[(${lk.mkString(",")}), (${rk.mkString(",")})]"
-//          }.mkString("\n")}\n" +
-//          s"other: ${otherConditions.mkString(",")}")
-        // 找出查询结构中的环
-        // 老版本代码, 只有一个share join
-//        val j: LogicalPlan = oneCircleJoinBranches(keysEachRelation,
-//          oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations)
-//        sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
         val j = updateOutput(output,
-          mixedCircleWithBraches(keysEachRelation, oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations))
+          mixStrategy(keysEachRelation, oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations))
+        // 如果多轮Join之后还有条件谓词，就加个过滤器
+        //assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
+        //assert(plan.output.filter(a => !j.output.contains(a)).nonEmpty, s"plan output: ${plan.output.mkString("[",",","]")}, child output: ${j.output.mkString("[",",","]")}")
+        val wapper = if (otherConditions.isEmpty) j
+        else {
+          val filterCondition = otherConditions.reduce((l, r) => And(l, r))
+          Filter(filterCondition, j)
+        }
+        sqlConf.setConfString(MjConfigConst.ONE_ROUND_ONCE, "false")
+        wapper
+    }
+  }
+
+
+  def mixStrategy(keysEachRelation: Seq[Seq[Expression]],
+                    oneRoundCore: OneRoundStrategy,
+                    multiRoundCore: MultiRoundStrategy,
+                    joinSizeEstimatorCore: JoinSizeEstimator,
+                    forceOneRound: Boolean,
+                    originBothKeysEachCondition: ConditionMatrix,
+                    relations: Seq[LogicalPlan]) = {
+    val initEdges = originBothKeysEachCondition.toSeq.map {
+      case ((l, r), (lk, rk)) =>
+        (AttributeVertex(l, lk), AttributeVertex(r, rk))
+    }
+    val relationNum = relations.length
+    val equivalenceClasses = Graph(initEdges).connectComponent(_.rId)
+    val rIdToCids = new Array[Set[Int]](relationNum).map(_ => Set[Int]())
+    val edges = mutable.HashMap[(Int, Int),Set[Int]]()
+    val variablesNum = equivalenceClasses.length
+    for (v <- 0 to variablesNum - 1; u <- v + 1 to variablesNum - 1) {
+      val vTableIds = equivalenceClasses(v).map(_.v.rId).toSet
+      val uTableIds = equivalenceClasses(u).map(_.v.rId).toSet
+      val ints = vTableIds.intersect(uTableIds)
+      if (ints.nonEmpty) {
+        edges += (v, u) -> ints
+      }
+    }
+    for (i <- 0 to variablesNum - 1) {
+      equivalenceClasses(i).foreach {
+        case Node(AttributeVertex(rId, _)) =>
+          rIdToCids(rId) = rIdToCids(rId) + i
+      }
+    }
+    val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
+    val catalog = oneRoundCore.catalog
+
+    val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
+      catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
+      sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt,
+      sqlConf.getConfString(MjConfigConst.TWO_JOIN_DEFAULT_SIZE, "100").toLong,
+      sqlConf.getConfString(MjConfigConst.THREE_JOIN_DEFAULT_SIZE, "1000").toLong)
+    plan
+  }
+  def mixedConfMode(oneRoundCore: OneRoundStrategy,
+                    multiRoundCore: MultiRoundStrategy,
+                    joinSizeEstimatorCore: JoinSizeEstimator,
+                    forceOneRound: Boolean)(plan: LogicalPlan): LogicalPlan = {
+    plan transform {
+      case MjExtractor(output, keysEachRelation,
+      originBothKeysEachCondition, otherConditions, relations)=>
+        val j = updateOutput(output,
+          mixStrategyWithConf(keysEachRelation, oneRoundCore, multiRoundCore, joinSizeEstimatorCore, forceOneRound, originBothKeysEachCondition, relations))
         // 如果多轮Join之后还有条件谓词，就加个过滤器
         //assert(false, s"plan output: ${j.output.mkString(",")}, otherCondition: ${otherConditions.isEmpty}")
         //assert(plan.output.filter(a => !j.output.contains(a)).nonEmpty, s"plan output: ${plan.output.mkString("[",",","]")}, child output: ${j.output.mkString("[",",","]")}")
@@ -77,7 +131,8 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     assert(newOutput!=null && plan != null, s"plan:${plan != null}, output: ${newOutput != null}")
     assert(plan.output != null, s"plan output null")
     assert(newOutput.length <= plan.output.length, s"output: ${newOutput.length}, plan: ${plan.output.length}")
-    assert(newOutput.forall(x => plan.output.contains(x)), s"new output has attribute which not in child output")
+    assert(newOutput.forall(x => plan.output.filter(p => p.semanticEquals(x)).nonEmpty), s"new output has attribute which not in child output, " +
+      s"new:${newOutput.mkString("[",",","]")}, plan: ${plan.output.mkString("[",",","]")}")
     if (plan.output.length > newOutput.length) {
       // 映射操作
       Project(newOutput, plan)
@@ -100,19 +155,19 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     }
   }
 
-  private def mixedCircleWithBraches(keysEachRelation: Seq[Seq[Expression]],
-                                     oneRoundCore: OneRoundStrategy,
-                                     multiRoundCore: MultiRoundStrategy,
-                                     joinSizeEstimatorCore: JoinSizeEstimator,
-                                     forceOneRound: Boolean,
-                                     originBothKeysEachCondition: ConditionMatrix,
-                                     relations: Seq[LogicalPlan]): LogicalPlan = {
+  private def mixStrategyWithConf(keysEachRelation: Seq[Seq[Expression]],
+                                  oneRoundCore: OneRoundStrategy,
+                                  multiRoundCore: MultiRoundStrategy,
+                                  joinSizeEstimatorCore: JoinSizeEstimator,
+                                  forceOneRound: Boolean,
+                                  originBothKeysEachCondition: ConditionMatrix,
+                                  relations: Seq[LogicalPlan]) = {
     val initEdges = originBothKeysEachCondition.toSeq.map {
       case ((l, r), (lk, rk)) =>
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
     }
     val relationNum = relations.length
-    val equivalenceClasses = Graph(initEdges).connectComponent()
+    val equivalenceClasses = Graph(initEdges).connectComponent(_.rId)
     val rIdToCids = new Array[Set[Int]](relationNum).map(_ => Set[Int]())
     val edges = mutable.HashMap[(Int, Int),Set[Int]]()
     val variablesNum = equivalenceClasses.length
@@ -132,20 +187,58 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     }
     val tree = Graph.transformToJoinTree(variablesNum, edges.toMap, rIdToCids)
     val catalog = oneRoundCore.catalog
-    val otherJoinSize:Long = if (sqlConf.getConfString(MjConfigConst.USE_THREE_JOIN, "true") == true) {
-      sqlConf.getConfString(MjConfigConst.THREE_JOIN_DEFAULT_SIZE, "100").toLong
-    } else {
-      sqlConf.getConfString(MjConfigConst.FOUR_JOIN_DEFAULT_SIZE, "100").toLong
-    }
+
+    val str = sqlConf.getConfString(MjConfigConst.JOIN_TREE, "")
+    val confJoinNode: MultiTree[ConfigTreeNode] = toConfTree(str)
     val (plan, _, _, _) = tree.treeToLogicalPlanWithSample(false, relations, originBothKeysEachCondition,
-      catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,
+      catalog, oneRoundCore, multiRoundCore, joinSizeEstimatorCore,confJoinNode,
       sqlConf.getConfString(MjConfigConst.ONE_ROUND_PARTITIONS, "100").toInt,
-      sqlConf.getConfString(MjConfigConst.JOIN_DEFAULT_SIZE, "100").toLong,
-      sqlConf.getConfString(MjConfigConst.TWO_JOIN_DEFAULT_SIZE, "100").toLong,
-      otherJoinSize,
       sqlConf.getConfString(MjConfigConst.DATA_SCALA, "1000").toInt)
     plan
   }
+
+  /**
+    * String -> ConfJoinNode
+    * @param str {name{xxx}{xxx}{xxx}}
+    * @return ConfJoinNode
+    */
+  def toConfTree(str: String): MultiTree[ConfigTreeNode] = {
+    val treeString = if (str.startsWith("{")) str.substring(1, str.length - 1) else str
+    val idx = treeString.indexOf("{")
+    if (idx > 0) {
+      val name = treeString.substring(0, idx)
+      val children = splitChildren(treeString.substring(idx)).map(s => toConfTree(s))
+      val node = new ConfigTreeNode(name)
+      val joinNode = MultiTree[ConfigTreeNode](node, children)
+      joinNode
+    } else {
+      val name = treeString
+      val node = new ConfigTreeNode(name)
+      MultiTree[ConfigTreeNode](node, null)
+    }
+  }
+
+  def splitChildren(str: String): Seq[String] = {
+    val s = new mutable.StringBuilder()
+    val children = mutable.ArrayBuffer[String]()
+    var i = 0
+    for (c <- str.toCharArray) {
+      s.append(c)
+      if (c == '{') {
+        i += 1
+      }
+      else if (c == '}') i -= 1
+      if (i == 0) {
+        children += s.toString()
+        s.clear()
+      }
+    }
+    if (s.nonEmpty) {
+      children += s.toString()
+    }
+    children
+  }
+
   private def oneCircleJoinBranches(keysEachRelation: Seq[Seq[Expression]],
                                     oneRoundCore: OneRoundStrategy,
                                     multiRoundCore: MultiRoundStrategy,
@@ -200,7 +293,7 @@ case class MjOptimizer(oneRoundStrategy: Option[OneRoundStrategy] = None,
     // 每个branch表示(join分支, 和shareJoin连接的条件)
     // 如果没有环, 那么branches就是长度就为1
     val branches = if (multiRoundCondition.nonEmpty) {
-      Graph(multiRoundCondition.toSeq.map(_._1)).connectComponent().map {
+      Graph(multiRoundCondition.toSeq.map(_._1)).connectComponent(_ + 0).map {
         case nodes =>
           val set = nodes.map(_.v).toSet
           val branchMap = multiRoundCondition.filter {

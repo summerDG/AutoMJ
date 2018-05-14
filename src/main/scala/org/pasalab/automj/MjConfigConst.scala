@@ -21,4 +21,5 @@ object MjConfigConst {
   val DATA_SCALA: String = "spark.automj.data.scale"
   val EXECUTION_MODE: String = "spark.automj.execution.mode"
   val USE_THREE_JOIN: String = "spark.automj.useThree"
+  val JOIN_TREE: String = "spark.automj.joinTree"
 }

@@ -19,9 +19,10 @@ class Graph[T](v: Seq[Int], e: Seq[(Int, Int)], nodeToId: Map[Node[T], Int]) {
   }
   /**
    * 找图中的强联通分量
+    * @param f 将T类型的对象转化为一个Int值, 用于排序
    * @return 强联通分量
    */
-  def connectComponent(): Seq[Seq[Node[T]]] = {
+  def connectComponent(f:T => Int): Seq[Seq[Node[T]]] = {
     val G = this
 
     val marked = new Array[Boolean](G.V)
@@ -64,7 +65,7 @@ class Graph[T](v: Seq[Int], e: Seq[(Int, Int)], nodeToId: Map[Node[T], Int]) {
     assert(closures.nonEmpty && closures.forall(_.nonEmpty),
       s"connectComponent has empty member(closure empty: ${closures.isEmpty}, all is empty: ${closures.forall(_.isEmpty)}," +
         s" ${closures.zipWithIndex.filter(_._1.isEmpty).map(_._2).mkString(",")})")
-    closures
+    closures.sortBy(_.map(x => f(x.v)).sum)
   }
 }
 object Graph {
@@ -139,13 +140,14 @@ object Graph {
         val cliques = m.getMaxCliques
         // 这里由于scanned的保证，所以cliques永远不为空
         // 尽量让当前的最大团与之前的Join节点有关联, 因为在之前的试验中，有些时候把语法树并行度增加了之后性能反而会下降
+        // 如果有多个满足条件的最大团, 选择编号之和最小的, 使语法树的结构是可以预先确定的
         val maxLen = cliques.map(_.length).max
         val candidates = cliques.filter(_.length == maxLen)
         val preRootCandidate = candidates.filter(x => x.find(n => nodeIdToCids.contains(n.v)).isDefined)
         if (preRootCandidate.isEmpty) {
-          candidates.head
+          candidates.sortBy(_.map(_.v).sum).head
         } else {
-          preRootCandidate.head
+          preRootCandidate.sortBy(_.map(_.v).sum).head
         }
       }
 

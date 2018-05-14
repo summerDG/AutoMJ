@@ -23,7 +23,7 @@ object HyperGraph {
       case ((l, r), (lk, rk)) =>
         (AttributeVertex(l, lk), AttributeVertex(r, rk))
     }.toSeq
-    val equivalenceClasses: Seq[Seq[Node[AttributeVertex]]] = Graph(joinEdges).connectComponent()
+    val equivalenceClasses: Seq[Seq[Node[AttributeVertex]]] = Graph(joinEdges).connectComponent(_.rId)
     // 每个等价属性相当于HyperGraph中的一个点
     val vBuf: ArrayBuffer[HyperGraphVertex] = ArrayBuffer[HyperGraphVertex]()
     // 每个relation相当于HyperGraph中的边, 包含的属性是HyperGraph中的点

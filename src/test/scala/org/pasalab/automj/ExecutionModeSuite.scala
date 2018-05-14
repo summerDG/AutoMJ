@@ -26,7 +26,7 @@ class ExecutionModeSuite extends QueryTest with SharedSQLContext{
   }
   test("execution mode (mixed)") {
     withSQLConf(MjConfigConst.Force_ONE_ROUND -> "true",
-      MjConfigConst.EXECUTION_MODE -> "mixed",
+      MjConfigConst.EXECUTION_MODE -> "mixed-fix",
       MjConfigConst.JOIN_DEFAULT_SIZE -> "1000",
       MjConfigConst.ONE_ROUND_PARTITIONS -> "8"){
       checkAnswer(sql("SELECT * FROM a, b, c where a.x = b.x AND b.y = c.y AND c.z = a.z"), expectedTriangle())

@@ -434,6 +434,17 @@ private[sql] trait SQLTestData { self =>
     df.createOrReplaceTempView("j")
     df
   }
+  protected lazy val gaDF: DataFrame = {
+    val df = spark.sparkContext.parallelize(
+      SpData(1, 1) ::
+        SpData(1, 2) ::
+        SpData(2, 1) ::
+        SpData(2, 2) ::
+        SpData(3, 1) ::
+        SpData(3, 2) :: Nil, 2).toDF()
+    df.createOrReplaceTempView("ga")
+    df
+  }
 
   protected lazy val triangleData: Arguments = {
 
@@ -680,6 +691,7 @@ private[sql] trait SQLTestData { self =>
     hDF
     iDF
     jDF
+    gaDF
 
     triangleData
     cliqueData
@@ -723,6 +735,7 @@ private[sql] object SQLTestData {
   case class ZpData(z: Int, p: Int)
   case class PqData(p: Int, q: Int)
   case class QsData(q: Int, s: Int)
+  case class SpData(s: Int, p: Int)
   case class SData(s: Int)
   case class YrData(y: Int, r: Int)
   case class RwData(r: Int, w: Int)
